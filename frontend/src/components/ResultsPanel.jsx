@@ -18,18 +18,49 @@ const RISK_META = {
     Benign:         { label: 'Low Risk',      icon: '✅', cls: 'risk-low' },
 };
 
+// Low confidence + benign = likely not a skin lesion
+const NOTHING_DETECTED_THRESHOLD = 0.30;
+
 export default function ResultsPanel({ result, onReset }) {
     if (!result) return null;
+
+    const nothingDetected = result.confidence < NOTHING_DETECTED_THRESHOLD && result.risk_level === 'Benign';
 
     const isRefer  = result.triage_recommendation.startsWith('REFER');
     const tips     = isRefer ? REFER_TIPS : ROUTINE_TIPS;
     const meta     = RISK_META[result.risk_level] || RISK_META.Benign;
     const malPct   = (result.malignancy_probability * 100).toFixed(1);
 
-    // Top 3 class probabilities sorted descending
-    const top3 = [...result.class_probabilities]
-        .sort((a, b) => b.probability - a.probability)
-        .slice(0, 3);
+    /* ── Nothing detected ── */
+    if (nothingDetected) {
+        return (
+            <div className="result-card">
+                <div className="risk-banner risk-low">
+                    <span className="risk-banner-icon">✅</span>
+                    <div>
+                        <div className="risk-banner-label">Nothing Detected</div>
+                        <div className="risk-banner-sub">No recognisable skin lesion found in this image</div>
+                    </div>
+                </div>
+
+                <div className="result-section">
+                    <h3 className="result-section-title">What this means</h3>
+                    <ul className="tip-list">
+                        <li className="tip-item"><span className="tip-dot" />The image does not appear to contain a skin lesion (e.g. clear skin, scratch, or unclear photo).</li>
+                        <li className="tip-item"><span className="tip-dot" />Try uploading a clearer, closer photo of the specific area of concern.</li>
+                        <li className="tip-item"><span className="tip-dot" />If you have concerns about a skin lesion, consult a dermatologist directly.</li>
+                    </ul>
+                </div>
+
+                <button className="btn-scan-again" onClick={onReset}>
+                    Try Another Image
+                </button>
+                <p className="result-legal">
+                    This is not a diagnosis. Consult a qualified dermatologist for evaluation.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="result-card">
@@ -91,26 +122,6 @@ export default function ResultsPanel({ result, onReset }) {
                             {malPct}%
                         </span>
                     </div>
-                </div>
-
-                {/* Top 3 probabilities */}
-                <div className="prob-list">
-                    {top3.map((cp) => (
-                        <div key={cp.class_code} className="prob-row">
-                            <span className="prob-dot" style={{ background: cp.colour }} />
-                            <span className="prob-name">{cp.full_name}</span>
-                            <div className="prob-bar-track">
-                                <div
-                                    className="prob-bar-fill"
-                                    style={{
-                                        width: `${(cp.probability * 100).toFixed(1)}%`,
-                                        background: cp.colour,
-                                    }}
-                                />
-                            </div>
-                            <span className="prob-pct">{(cp.probability * 100).toFixed(1)}%</span>
-                        </div>
-                    ))}
                 </div>
             </div>
 
