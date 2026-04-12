@@ -1,31 +1,37 @@
 """
-Email sending via SMTP (aiosmtplib).
-Set SMTP_USER + SMTP_PASSWORD env vars to enable real email delivery.
-In development (no credentials) the OTP is logged to console instead.
+Email sending via stdlib smtplib (no extra dependencies).
+Runs in a thread pool so it doesn't block the async event loop.
+
+Required env vars:
+  SMTP_HOST      - default: smtp-relay.brevo.com
+  SMTP_PORT      - default: 587
+  SMTP_USER      - your Brevo login email
+  SMTP_PASSWORD  - your Brevo SMTP key
+  SMTP_FROM      - verified sender email in Brevo
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
+import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import aiosmtplib
-
 logger = logging.getLogger(__name__)
 
-SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp-relay.brevo.com")
 SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER: str = os.getenv("SMTP_USER", "")
 SMTP_PASS: str = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM: str = os.getenv("SMTP_FROM", SMTP_USER)
 
-_HTML_TEMPLATE = """\
+_HTML = """\
 <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;
             padding:32px;background:#f4f7fb;border-radius:16px;">
   <div style="background:#fff;border-radius:12px;padding:32px;text-align:center;
               box-shadow:0 4px 16px rgba(0,0,0,.09);">
-    <div style="font-size:2.5rem;margin-bottom:12px;">🔬</div>
+    <div style="font-size:2.5rem;margin-bottom:12px;">&#128300;</div>
     <h2 style="color:#0f1c35;font-size:1.4rem;margin-bottom:8px;">SkinTriage AI</h2>
     <p style="color:#4a5568;margin-bottom:24px;">Hi {name}, here is your verification code:</p>
     <div style="background:#e8f0fd;border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -41,32 +47,38 @@ _HTML_TEMPLATE = """\
 """
 
 
-async def send_otp_email(to_email: str, otp_code: str, name: str = "there") -> bool:
-    if not SMTP_USER or not SMTP_PASS:
-        # Development fallback — print to logs so you can test without SMTP
-        logger.warning(
-            "⚠️  SMTP not configured. OTP for %s → %s  (set SMTP_USER / SMTP_PASSWORD)",
-            to_email, otp_code,
-        )
-        return True
-
+def _send_sync(to_email: str, subject: str, html: str) -> None:
+    """Blocking SMTP send — called via asyncio.to_thread."""
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Your SkinTriage AI verification code"
+    msg["Subject"] = subject
     msg["From"]    = SMTP_FROM
     msg["To"]      = to_email
-    msg.attach(MIMEText(_HTML_TEMPLATE.format(name=name, code=otp_code), "html"))
+    msg.attach(MIMEText(html, "html"))
 
-    try:
-        await aiosmtplib.send(
-            msg,
-            hostname=SMTP_HOST,
-            port=SMTP_PORT,
-            username=SMTP_USER,
-            password=SMTP_PASS,
-            start_tls=True,
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(SMTP_USER, SMTP_PASS)
+        server.sendmail(SMTP_FROM, [to_email], msg.as_string())
+
+
+async def send_otp_email(to_email: str, otp_code: str, name: str = "there") -> bool:
+    if not SMTP_USER or not SMTP_PASS:
+        logger.warning(
+            "⚠️  SMTP not configured — OTP for %s is: %s  "
+            "(add SMTP_USER / SMTP_PASSWORD env vars to enable real email)",
+            to_email, otp_code,
         )
-        logger.info("OTP email sent to %s", to_email)
+        return True   # allow auth flow to continue without email
+
+    html = _HTML.format(name=name, code=otp_code)
+    try:
+        await asyncio.to_thread(
+            _send_sync, to_email, "Your SkinTriage AI verification code", html
+        )
+        logger.info("✅ OTP email sent to %s", to_email)
         return True
     except Exception as exc:
-        logger.error("Failed to send OTP email to %s: %s", to_email, exc)
+        logger.error("❌ Failed to send OTP email to %s: %s", to_email, exc)
         return False
