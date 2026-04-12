@@ -42,9 +42,8 @@ async def lifespan(app: FastAPI):
 
     try:
         paths = download_all()
+        model = load_student_model(paths[STUDENT_CHECKPOINT], device)
         threshold_cfg = load_threshold_config(paths[THRESHOLD_CONFIG_FILE])
-        num_classes = threshold_cfg.get("num_classes", 7)
-        model = load_student_model(paths[STUDENT_CHECKPOINT], device, num_classes=num_classes)
 
         rl_policy = None
         try:

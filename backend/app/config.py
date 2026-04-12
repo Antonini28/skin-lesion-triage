@@ -19,10 +19,10 @@ FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://skin-lesion-triage-gxic.v
 # ──────────────────────────────────────────────
 #  Model / Pipeline
 # ──────────────────────────────────────────────
-NUM_CLASSES: int = 8
+NUM_CLASSES: int = 7
 
 CLASS_NAMES: list[str] = [
-    "akiec", "bcc", "bkl", "df", "mel", "nv", "vasc", "no_lesion"
+    "akiec", "bcc", "bkl", "df", "mel", "nv", "vasc"
 ]
 
 CLASS_TO_IDX: dict[str, int] = {c: i for i, c in enumerate(CLASS_NAMES)}
@@ -35,14 +35,13 @@ BENIGN_INDICES: list[int] = sorted(
 )
 
 CLASS_INFO: dict[str, dict] = {
-    "akiec":      {"full": "Actinic Keratoses",   "risk": "Pre-malignant", "colour": "#f39c12"},
-    "bcc":        {"full": "Basal Cell Carcinoma", "risk": "MALIGNANT",     "colour": "#e67e22"},
-    "bkl":        {"full": "Benign Keratosis",     "risk": "Benign",        "colour": "#3498db"},
-    "df":         {"full": "Dermatofibroma",        "risk": "Benign",        "colour": "#1abc9c"},
-    "mel":        {"full": "Melanoma",             "risk": "MALIGNANT",     "colour": "#e74c3c"},
-    "nv":         {"full": "Melanocytic Nevi",     "risk": "Benign",        "colour": "#2ecc71"},
-    "vasc":       {"full": "Vascular Lesions",     "risk": "Benign",        "colour": "#9b59b6"},
-    "no_lesion":  {"full": "No Lesion Detected",   "risk": "Benign",        "colour": "#95a5a6"},
+    "akiec": {"full": "Actinic Keratoses",   "risk": "Pre-malignant", "colour": "#f39c12"},
+    "bcc":   {"full": "Basal Cell Carcinoma", "risk": "MALIGNANT",     "colour": "#e67e22"},
+    "bkl":   {"full": "Benign Keratosis",     "risk": "Benign",        "colour": "#3498db"},
+    "df":    {"full": "Dermatofibroma",        "risk": "Benign",        "colour": "#1abc9c"},
+    "mel":   {"full": "Melanoma",             "risk": "MALIGNANT",     "colour": "#e74c3c"},
+    "nv":    {"full": "Melanocytic Nevi",     "risk": "Benign",        "colour": "#2ecc71"},
+    "vasc":  {"full": "Vascular Lesions",     "risk": "Benign",        "colour": "#9b59b6"},
 }
 
 IMAGENET_MEAN: list[float] = [0.485, 0.456, 0.406]
