@@ -85,13 +85,14 @@ def download_all(repo_id: str | None = None, cache_dir: str | None = None) -> di
     return paths
 
 
-def load_student_model(checkpoint_path: str, device: torch.device) -> torch.nn.Module:
+def load_student_model(checkpoint_path: str, device: torch.device, num_classes: int | None = None) -> torch.nn.Module:
     """Load the quantised EfficientNet-B0 student model.
 
     The checkpoint was saved after dynamic INT8 quantisation of the classifier
     head, so we must apply ``quantize_dynamic`` before loading the state dict.
+    num_classes overrides the config value (used after retraining with 8 classes).
     """
-    model = create_student_model(num_classes=NUM_CLASSES)
+    model = create_student_model(num_classes=num_classes or NUM_CLASSES)
     # Apply the same dynamic INT8 quantisation that was used during training
     # (quantises nn.Linear layers, including the final classifier head)
     model = torch.quantization.quantize_dynamic(
