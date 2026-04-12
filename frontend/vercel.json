@@ -2,6 +2,9 @@
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ],
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
   "env": {
     "VITE_API_URL": "https://skin-lesion-api-jn1u.onrender.com"
   }
