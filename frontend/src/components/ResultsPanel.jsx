@@ -19,7 +19,7 @@ const RISK_META = {
 };
 
 // Low confidence + benign = likely not a skin lesion
-const NOTHING_DETECTED_THRESHOLD = 0.30;
+const NOTHING_DETECTED_THRESHOLD = 0.50;
 
 export default function ResultsPanel({ result, onReset }) {
     if (!result) return null;
