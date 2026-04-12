@@ -38,8 +38,8 @@ export default function ResultsPanel({ result, onReset }) {
                 <div className="risk-banner risk-low">
                     <span className="risk-banner-icon">✅</span>
                     <div>
-                        <div className="risk-banner-label">Nothing Detected</div>
-                        <div className="risk-banner-sub">No recognisable skin lesion found in this image</div>
+                        <div className="risk-banner-label">We did not detect signs of a skin lesion in this image</div>
+                        <div className="risk-banner-sub">The image may show clear skin, a scratch, or may be unclear</div>
                     </div>
                 </div>
 
