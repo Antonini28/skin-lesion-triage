@@ -37,9 +37,8 @@ class PredictionResponse(BaseModel):
     )
     disclaimer: str = Field(
         default=(
-            "⚠️  This tool is for educational / research purposes only. "
-            "It is NOT a certified medical device and must NOT be used for "
-            "clinical diagnosis. Always consult a qualified dermatologist."
+            "This is not a diagnosis. "
+            "Consult a qualified dermatologist for evaluation."
         )
     )
 

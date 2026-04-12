@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ImageUpload from '../components/ImageUpload';
 import ResultsPanel from '../components/ResultsPanel';
 import { predictImage, checkHealth } from '../api/client';
@@ -9,7 +9,6 @@ export default function Home() {
     const [error, setError] = useState(null);
     const [serverStatus, setServerStatus] = useState('checking');
 
-    // Ping the backend on mount to wake it up
     useEffect(() => {
         checkHealth()
             .then((data) => setServerStatus(data.model_loaded ? 'ready' : 'loading'))
@@ -20,7 +19,6 @@ export default function Home() {
         setLoading(true);
         setError(null);
         setResult(null);
-
         try {
             const data = await predictImage(file);
             setResult(data);
@@ -29,7 +27,7 @@ export default function Home() {
             const msg =
                 err.response?.data?.detail ||
                 (err.code === 'ECONNABORTED'
-                    ? 'Request timed out. The server may be waking up — please try again.'
+                    ? 'Request timed out — the server may be waking up. Please try again.'
                     : 'Failed to analyse image. Please try again.');
             setError(msg);
         } finally {
@@ -37,47 +35,67 @@ export default function Home() {
         }
     };
 
+    const handleReset = () => {
+        setResult(null);
+        setError(null);
+    };
+
     return (
         <main className="home">
-            {/* Hero */}
-            <section className="hero">
-                <h1 className="hero-title">
-                    AI-Powered Skin Lesion <span className="gradient-text">Triage</span>
-                </h1>
-                <p className="hero-sub">
-                    Upload a dermoscopic image to receive an instant malignancy risk
-                    assessment powered by an EfficientNet-B0 model with RL-adaptive
-                    thresholds.
-                </p>
+            {!result ? (
+                <>
+                    {/* Hero */}
+                    <section className="hero">
+                        <div className="hero-icon">🔬</div>
+                        <h1 className="hero-title">Skin Check Service</h1>
+                        <p className="hero-sub">
+                            Check a skin concern in seconds. Upload a dermoscopic photo
+                            and get an instant risk assessment.
+                        </p>
 
-                {/* Server status badge */}
-                <div className={`server-badge server-badge--${serverStatus}`}>
-                    <span className="server-dot" />
-                    {serverStatus === 'ready' && 'Server ready'}
-                    {serverStatus === 'loading' && 'Server loading model…'}
-                    {serverStatus === 'checking' && 'Connecting to server…'}
-                    {serverStatus === 'offline' && 'Server offline — first request will wake it'}
-                </div>
-            </section>
+                        {serverStatus === 'offline' && (
+                            <div className="wake-notice">
+                                ⏳ Server is waking up — first scan may take ~60 seconds
+                            </div>
+                        )}
+                    </section>
 
-            {/* Upload */}
-            <section className="upload-section">
-                <ImageUpload onUpload={handleUpload} loading={loading} />
-            </section>
+                    {/* Upload */}
+                    <section className="upload-section">
+                        <ImageUpload onUpload={handleUpload} loading={loading} />
+                    </section>
 
-            {/* Error */}
-            {error && (
-                <div className="error-banner" id="error-banner">
-                    <span className="error-icon">⚠️</span>
-                    <span>{error}</span>
-                </div>
-            )}
+                    {/* Steps */}
+                    {!loading && (
+                        <div className="steps">
+                            <div className="step">
+                                <div className="step-num">1</div>
+                                <p>Upload a clear photo of the skin lesion</p>
+                            </div>
+                            <div className="step">
+                                <div className="step-num">2</div>
+                                <p>AI analyses shape, colour and texture</p>
+                            </div>
+                            <div className="step">
+                                <div className="step-num">3</div>
+                                <p>Receive an instant risk assessment</p>
+                            </div>
+                        </div>
+                    )}
 
-            {/* Results */}
-            {result && (
-                <section className="results-section">
-                    <ResultsPanel result={result} />
-                </section>
+                    {error && (
+                        <div className="error-banner">
+                            <span>⚠️</span>
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    <p className="home-legal">
+                        This tool does not provide a diagnosis. Consult a doctor for evaluation.
+                    </p>
+                </>
+            ) : (
+                <ResultsPanel result={result} onReset={handleReset} />
             )}
         </main>
     );
