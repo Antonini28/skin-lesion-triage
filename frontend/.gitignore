@@ -1,0 +1,7 @@
+# Local env (contains API URL for dev)
+.env.local
+.env*.local
+
+# Build output
+dist/
+node_modules/

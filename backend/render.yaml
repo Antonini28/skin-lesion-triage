@@ -1,0 +1,18 @@
+# ─────────────────────────────────────────────────
+#  Render Blueprint — Auto-deploy Config
+#  https://render.com/docs/blueprint-spec
+# ─────────────────────────────────────────────────
+services:
+  - type: web
+    name: skin-lesion-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: HF_REPO_ID
+        value: Stoic1344223/skin-lesion-triage-models
+      - key: FRONTEND_URL
+        value: https://your-app.vercel.app
+      - key: MODEL_CACHE_DIR
+        value: /tmp/models
+    healthCheckPath: /health

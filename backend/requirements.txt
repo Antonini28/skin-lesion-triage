@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────
+#  Skin Lesion Triage API — Python Dependencies
+# ─────────────────────────────────────────────────
+# Install with:
+#   pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+pydantic==2.10.0
+Pillow==11.0.0
+huggingface-hub==0.26.0
+timm==1.0.11
+numpy<2.0
+
+# ── PyTorch CPU-only wheels ──
+# Install with: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+torch==2.5.0+cpu
+torchvision==0.20.0+cpu

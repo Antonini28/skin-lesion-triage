@@ -1,0 +1,67 @@
+{
+  "image_size_stage1": 224,
+  "image_size_stage2": 384,
+  "batch_size_stage1": 32,
+  "batch_size_stage2": 8,
+  "num_classes": 7,
+  "class_names": [
+    "akiec",
+    "bcc",
+    "bkl",
+    "df",
+    "mel",
+    "nv",
+    "vasc"
+  ],
+  "class_to_idx": {
+    "akiec": 0,
+    "bcc": 1,
+    "bkl": 2,
+    "df": 3,
+    "mel": 4,
+    "nv": 5,
+    "vasc": 6
+  },
+  "idx_to_class": {
+    "0": "akiec",
+    "1": "bcc",
+    "2": "bkl",
+    "3": "df",
+    "4": "mel",
+    "5": "nv",
+    "6": "vasc"
+  },
+  "class_aug_intensity": {
+    "akiec": "standard",
+    "bcc": "standard",
+    "bkl": "standard",
+    "df": "standard",
+    "mel": "standard",
+    "nv": "standard",
+    "vasc": "standard"
+  },
+  "use_alpha_in_loss": false,
+  "effective_weights": [
+    0.9914402961730957,
+    0.6346567273139954,
+    0.2937180995941162,
+    2.3769280910491943,
+    0.2933516204357147,
+    0.05841819569468498,
+    2.351487159729004
+  ],
+  "focal_gamma": 2.0,
+  "mixup_alpha": 0.4,
+  "cutmix_alpha": 1.0,
+  "imagenet_mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "imagenet_std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "balancing_strategy": "sampler_only"
+}
