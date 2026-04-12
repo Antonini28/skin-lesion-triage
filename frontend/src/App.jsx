@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
-import BottomNav from './components/BottomNav';
+import Footer from './components/Footer';
 import ScanModal from './components/ScanModal';
 import BodyMap from './pages/BodyMap';
 import Inbox from './pages/Inbox';
@@ -13,7 +13,7 @@ function AppInner() {
 
     return (
         <div className="app">
-            <Header />
+            <Header onScan={() => setScanOpen(true)} />
             <main className="app-content">
                 <Routes>
                     <Route path="/"        element={<BodyMap onScan={() => setScanOpen(true)} />} />
@@ -23,7 +23,7 @@ function AppInner() {
                     <Route path="*"        element={<BodyMap onScan={() => setScanOpen(true)} />} />
                 </Routes>
             </main>
-            <BottomNav onScan={() => setScanOpen(true)} />
+            <Footer />
             {scanOpen && <ScanModal onClose={() => setScanOpen(false)} />}
         </div>
     );
