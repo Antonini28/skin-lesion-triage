@@ -35,6 +35,10 @@ class PredictionResponse(BaseModel):
         ..., ge=0.0, le=1.0,
         description="Max class probability after temperature scaling"
     )
+    not_detected: bool = Field(
+        default=False,
+        description="True when entropy is too high to be a valid skin lesion image"
+    )
     disclaimer: str = Field(
         default=(
             "This is not a diagnosis. "

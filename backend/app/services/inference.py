@@ -84,7 +84,12 @@ class InferenceService:
         predicted_idx: int = int(probs_np.argmax())
         predicted_class: str = IDX_TO_CLASS[predicted_idx]
 
-        # 4. Malignancy score
+        # 4. Entropy — high entropy means probability is spread (non-skin image)
+        # Uniform over 7 classes → entropy ≈ 1.946; real lesion → typically < 1.3
+        entropy: float = float(-np.sum(probs_np * np.log(probs_np + 1e-10)))
+        not_detected: bool = entropy > 1.4
+
+        # 5. Malignancy score
         mal_prob: float = float(probs_np[MALIGNANT_INDICES].sum())
 
         # 5. Threshold
@@ -120,6 +125,7 @@ class InferenceService:
             triage_recommendation=triage,
             risk_level=CLASS_INFO[predicted_class]["risk"],
             confidence=round(float(probs_np.max()), 6),
+            not_detected=not_detected,
         )
 
     # ──────────────────────────────────────────────

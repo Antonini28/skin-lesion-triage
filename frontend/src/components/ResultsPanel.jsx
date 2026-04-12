@@ -18,13 +18,11 @@ const RISK_META = {
     Benign:         { label: 'Low Risk',      icon: '✅', cls: 'risk-low' },
 };
 
-// Low confidence + benign = likely not a skin lesion
-const NOTHING_DETECTED_THRESHOLD = 0.50;
-
 export default function ResultsPanel({ result, onReset }) {
     if (!result) return null;
 
-    const nothingDetected = result.confidence < NOTHING_DETECTED_THRESHOLD && result.risk_level === 'Benign';
+    // Backend flags high-entropy results (probability spread = non-skin image)
+    const nothingDetected = result.not_detected;
 
     const isRefer  = result.triage_recommendation.startsWith('REFER');
     const tips     = isRefer ? REFER_TIPS : ROUTINE_TIPS;
