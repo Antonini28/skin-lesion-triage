@@ -47,10 +47,12 @@ export default function Home() {
                     {/* Hero */}
                     <section className="hero">
                         <div className="hero-icon">🔬</div>
-                        <h1 className="hero-title">Skin Check Service</h1>
+                        <h1 className="hero-title">
+                            Accurate skin cancer <span>detection</span> made simple
+                        </h1>
                         <p className="hero-sub">
-                            Check a skin concern in seconds. Upload a dermoscopic photo
-                            and get an instant risk assessment.
+                            Upload a photo of your skin concern and get an instant
+                            AI-powered risk assessment in seconds.
                         </p>
 
                         {serverStatus === 'offline' && (
