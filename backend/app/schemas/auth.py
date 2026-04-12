@@ -13,18 +13,15 @@ from pydantic import BaseModel, EmailStr
 
 class RegisterRequest(BaseModel):
     email:         EmailStr
+    password:      str
     name:          str
-    gender:        str   # 'male' | 'female'
+    gender:        str        # 'male' | 'female'
     year_of_birth: int
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-
-
-class VerifyOTPRequest(BaseModel):
-    email: EmailStr
-    code:  str
+    email:    EmailStr
+    password: str
 
 
 class UpdateProfileRequest(BaseModel):
@@ -41,7 +38,6 @@ class UserResponse(BaseModel):
     gender:          Optional[str]
     year_of_birth:   Optional[int]
     profile_picture: Optional[str]
-    is_verified:     bool
     created_at:      datetime
 
     model_config = {"from_attributes": True}

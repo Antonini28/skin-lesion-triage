@@ -1,5 +1,6 @@
 """
-Auth endpoints: /auth/register, /auth/login, /auth/verify-otp, /auth/me, /auth/profile
+Auth endpoints: register, login, me, profile update.
+Standard email + password — no OTP, no email service required.
 """
 from __future__ import annotations
 
@@ -11,16 +12,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.db_models import User
 from app.schemas.auth import (
-    LoginRequest, RegisterRequest, TokenResponse, UpdateProfileRequest,
-    UserResponse, VerifyOTPRequest,
+    LoginRequest, RegisterRequest, TokenResponse,
+    UpdateProfileRequest, UserResponse,
 )
 from app.services import auth_service
-from app.services.email_service import send_otp_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# ── Dependency: current authenticated user ────────────────────────────────────
+# ── Dependency ────────────────────────────────────────────────────────────────
 
 def get_current_user(
     authorization: Optional[str] = Header(None),
@@ -38,59 +38,37 @@ def get_current_user(
     return user
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+# ── Register ──────────────────────────────────────────────────────────────────
 
-@router.post("/register")
+@router.post("/register", response_model=TokenResponse)
 async def register(body: RegisterRequest, db: Session = Depends(get_db)):
-    existing = auth_service.get_user_by_email(db, body.email)
-    if existing and existing.is_verified:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered. Please log in instead.",
-        )
+    if auth_service.get_user_by_email(db, body.email):
+        raise HTTPException(status_code=400, detail="Email already registered. Please log in.")
 
-    # Create (or re-use unverified) user
-    user = existing or auth_service.create_user(
-        db, body.email, body.name, body.gender, body.year_of_birth
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+
+    user  = auth_service.create_user(
+        db, body.email, body.password,
+        body.name, body.gender, body.year_of_birth,
     )
-    # Update details if re-registering
-    if existing:
-        user.name, user.gender, user.year_of_birth = body.name, body.gender, body.year_of_birth
-        db.commit()
-
-    code = auth_service.create_otp(db, body.email)
-    await send_otp_email(body.email, code, body.name)
-    return {"message": f"Verification code sent to {body.email}"}
+    token = auth_service.create_access_token(user.id)
+    return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
-@router.post("/login")
+# ── Login ─────────────────────────────────────────────────────────────────────
+
+@router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = auth_service.get_user_by_email(db, body.email)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="No account found with that email. Please register first.",
-        )
-    code = auth_service.create_otp(db, body.email)
-    await send_otp_email(body.email, code, user.name)
-    return {"message": f"Verification code sent to {body.email}"}
-
-
-@router.post("/verify-otp", response_model=TokenResponse)
-async def verify_otp(body: VerifyOTPRequest, db: Session = Depends(get_db)):
-    user = auth_service.get_user_by_email(db, body.email)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not auth_service.verify_otp(db, body.email, body.code):
-        raise HTTPException(status_code=400, detail="Invalid or expired code. Please try again.")
-
-    user.is_verified = True
-    db.commit()
-    db.refresh(user)
+    if not user or not auth_service.verify_password(body.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
     token = auth_service.create_access_token(user.id)
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
+
+# ── Me / Profile ──────────────────────────────────────────────────────────────
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):

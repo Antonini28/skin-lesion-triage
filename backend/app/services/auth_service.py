@@ -1,59 +1,42 @@
 """
-Auth helpers: OTP generation, JWT creation/verification, user CRUD.
+Auth helpers: password hashing (stdlib only), JWT, user CRUD.
+No external dependencies beyond python-jose.
 """
 from __future__ import annotations
 
+import hashlib
 import os
-import random
-import string
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from app.models.db_models import OTPCode, User
+from app.models.db_models import User
 
 SECRET_KEY: str = os.getenv("SECRET_KEY", "skintriage-dev-secret-change-in-production-32chars")
 ALGORITHM:  str = "HS256"
 TOKEN_EXPIRE_HOURS: int = 24 * 7   # 7 days
 
-
-# ── OTP ───────────────────────────────────────────────────────────────────────
-
-def generate_otp() -> str:
-    return "".join(random.choices(string.digits, k=6))
+_ITERATIONS = 260_000
 
 
-def create_otp(db: Session, email: str) -> str:
-    """Invalidate old OTPs for this email and create a fresh one."""
-    db.query(OTPCode).filter(
-        OTPCode.email == email, OTPCode.used == False
-    ).update({"used": True})
-    db.commit()
+# ── Password hashing (PBKDF2-HMAC-SHA256, stdlib) ─────────────────────────────
 
-    code = generate_otp()
-    db.add(OTPCode(
-        email=email,
-        code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=10),
-    ))
-    db.commit()
-    return code
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    dk   = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), _ITERATIONS)
+    return f"pbkdf2:sha256:{salt}:{dk.hex()}"
 
 
-def verify_otp(db: Session, email: str, code: str) -> bool:
-    row = db.query(OTPCode).filter(
-        OTPCode.email      == email,
-        OTPCode.code       == code,
-        OTPCode.used       == False,
-        OTPCode.expires_at >  datetime.utcnow(),
-    ).first()
-    if not row:
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        _, _, salt, dk_hex = stored.split(":")
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), _ITERATIONS)
+        return secrets.compare_digest(dk.hex(), dk_hex)
+    except Exception:
         return False
-    row.used = True
-    db.commit()
-    return True
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
@@ -81,8 +64,17 @@ def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
 
-def create_user(db: Session, email: str, name: str, gender: str, year_of_birth: int) -> User:
-    user = User(email=email, name=name, gender=gender, year_of_birth=year_of_birth)
+def create_user(
+    db: Session, email: str, password: str,
+    name: str, gender: str, year_of_birth: int,
+) -> User:
+    user = User(
+        email         = email,
+        password_hash = hash_password(password),
+        name          = name,
+        gender        = gender,
+        year_of_birth = year_of_birth,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)

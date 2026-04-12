@@ -1,5 +1,5 @@
 """
-ORM models: User, OTPCode, ScanHistory.
+ORM models: User, ScanHistory.
 """
 from __future__ import annotations
 
@@ -17,23 +17,13 @@ class User(Base):
     id              = Column(Integer, primary_key=True, index=True)
     email           = Column(String, unique=True, index=True, nullable=False)
     name            = Column(String, nullable=False)
+    password_hash   = Column(String, nullable=False)
     gender          = Column(String)          # 'male' | 'female'
     year_of_birth   = Column(Integer)
-    profile_picture = Column(Text)            # base64 data-URL (JPEG, 200×200)
-    is_verified     = Column(Boolean, default=False)
+    profile_picture = Column(Text)            # base64 data-URL
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     scans = relationship("ScanHistory", back_populates="user", cascade="all, delete-orphan")
-
-
-class OTPCode(Base):
-    __tablename__ = "otp_codes"
-
-    id         = Column(Integer, primary_key=True, index=True)
-    email      = Column(String, index=True, nullable=False)
-    code       = Column(String, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    used       = Column(Boolean, default=False)
 
 
 class ScanHistory(Base):

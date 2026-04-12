@@ -32,13 +32,8 @@ export const authRegister = async (body) => {
   return data;
 };
 
-export const authLogin = async (email) => {
-  const { data } = await api.post('/auth/login', { email });
-  return data;
-};
-
-export const authVerifyOTP = async (email, code) => {
-  const { data } = await api.post('/auth/verify-otp', { email, code });
+export const authLogin = async (email, password) => {
+  const { data } = await api.post('/auth/login', { email, password });
   return data;
 };
 
