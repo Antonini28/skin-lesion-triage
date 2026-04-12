@@ -1,0 +1,54 @@
+"""
+ORM models: User, OTPCode, ScanHistory.
+"""
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
+
+from app.database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    email           = Column(String, unique=True, index=True, nullable=False)
+    name            = Column(String, nullable=False)
+    gender          = Column(String)          # 'male' | 'female'
+    year_of_birth   = Column(Integer)
+    profile_picture = Column(Text)            # base64 data-URL (JPEG, 200×200)
+    is_verified     = Column(Boolean, default=False)
+    created_at      = Column(DateTime, default=datetime.utcnow)
+
+    scans = relationship("ScanHistory", back_populates="user", cascade="all, delete-orphan")
+
+
+class OTPCode(Base):
+    __tablename__ = "otp_codes"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    email      = Column(String, index=True, nullable=False)
+    code       = Column(String, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used       = Column(Boolean, default=False)
+
+
+class ScanHistory(Base):
+    __tablename__ = "scan_history"
+
+    id                      = Column(Integer, primary_key=True, index=True)
+    user_id                 = Column(Integer, ForeignKey("users.id"), nullable=False)
+    predicted_class         = Column(String)
+    predicted_class_full    = Column(String)
+    risk_level              = Column(String)
+    malignancy_probability  = Column(Float)
+    triage_recommendation   = Column(String)
+    confidence              = Column(Float)
+    scanned_at              = Column(DateTime, default=datetime.utcnow)
+    followed_up             = Column(Boolean, default=False)
+    followed_up_at          = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="scans")

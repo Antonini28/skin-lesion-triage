@@ -2,14 +2,15 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-  timeout: 120000,  // 2 min — allows for Render cold start
+  timeout: 120000,
 });
 
-/**
- * Upload a skin lesion image for classification.
- * @param {File} file
- * @returns {Promise<object>} PredictionResponse
- */
+// Restore token on page load
+const _token = localStorage.getItem('auth_token');
+if (_token) api.defaults.headers.common['Authorization'] = `Bearer ${_token}`;
+
+// ── ML ────────────────────────────────────────────────────────────────────────
+
 export const predictImage = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -19,12 +20,52 @@ export const predictImage = async (file) => {
   return data;
 };
 
-/**
- * Check API health status.
- * @returns {Promise<object>} HealthResponse
- */
 export const checkHealth = async () => {
   const { data } = await api.get('/health');
+  return data;
+};
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export const authRegister = async (body) => {
+  const { data } = await api.post('/auth/register', body);
+  return data;
+};
+
+export const authLogin = async (email) => {
+  const { data } = await api.post('/auth/login', { email });
+  return data;
+};
+
+export const authVerifyOTP = async (email, code) => {
+  const { data } = await api.post('/auth/verify-otp', { email, code });
+  return data;
+};
+
+export const getMe = async () => {
+  const { data } = await api.get('/auth/me');
+  return data;
+};
+
+export const updateProfile = async (body) => {
+  const { data } = await api.put('/auth/profile', body);
+  return data;
+};
+
+// ── Scan history ──────────────────────────────────────────────────────────────
+
+export const saveScan = async (scanData) => {
+  const { data } = await api.post('/scans/save', scanData);
+  return data;
+};
+
+export const getScanHistory = async () => {
+  const { data } = await api.get('/scans/history');
+  return data;
+};
+
+export const toggleFollowup = async (scanId) => {
+  const { data } = await api.put(`/scans/${scanId}/followup`);
   return data;
 };
 
