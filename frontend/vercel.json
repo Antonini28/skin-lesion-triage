@@ -1,5 +1,8 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": "https://skin-lesion-api-jn1u.onrender.com"
+  }
 }

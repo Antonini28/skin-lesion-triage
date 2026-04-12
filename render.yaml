@@ -13,7 +13,7 @@ services:
       - key: HF_REPO_ID
         value: Stoic1344223/skin-lesion-triage-models
       - key: FRONTEND_URL
-        value: https://your-app.vercel.app
+        value: https://skin-lesion-triage.vercel.app
       - key: MODEL_CACHE_DIR
         value: /tmp/models
     healthCheckPath: /health
