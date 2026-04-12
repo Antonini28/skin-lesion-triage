@@ -14,7 +14,7 @@ MODEL_CACHE_DIR: str = os.getenv("MODEL_CACHE_DIR", "/tmp/models")
 # ──────────────────────────────────────────────
 #  CORS
 # ──────────────────────────────────────────────
-FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://skin-lesion-triage-gxic.vercel.app")
 
 # ──────────────────────────────────────────────
 #  Model / Pipeline
