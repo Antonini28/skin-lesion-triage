@@ -421,6 +421,32 @@ a { color: var(--blue); text-decoration: none; }
 .dropzone-icon { font-size: 2.8rem; margin-bottom: 0.75rem; }
 .dropzone-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; }
 .dropzone-sub, .dropzone-hint { font-size: 0.82rem; color: var(--text-muted); }
+
+/* ── Webcam ── */
+.cam-row { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; margin-top: 0.75rem; }
+.btn-use-camera {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1.2rem; border-radius: 8px; border: 1.5px solid var(--primary);
+    background: transparent; color: var(--primary); font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.btn-use-camera:hover { background: var(--primary); color: #fff; }
+.cam-error { font-size: 0.82rem; color: #e74c3c; text-align: center; }
+.webcam-container { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; }
+.webcam-video { width: 100%; max-height: 340px; border-radius: 12px; object-fit: cover; background: #000; }
+.webcam-controls { display: flex; gap: 0.75rem; }
+.btn-capture {
+    padding: 0.55rem 1.6rem; border-radius: 8px; border: none;
+    background: var(--primary); color: #fff; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s;
+}
+.btn-capture:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-cam-cancel {
+    padding: 0.55rem 1.2rem; border-radius: 8px; border: 1.5px solid var(--text-muted);
+    background: transparent; color: var(--text-muted); font-size: 0.9rem;
+    cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.btn-cam-cancel:hover { border-color: #e74c3c; color: #e74c3c; }
 .dropzone-preview { display: flex; flex-direction: column; align-items: center; }
 .preview-img {
   max-height: 190px; max-width: 100%;
