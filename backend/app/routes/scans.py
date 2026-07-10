@@ -31,6 +31,8 @@ async def save_scan(
         malignancy_probability = body.malignancy_probability,
         triage_recommendation  = body.triage_recommendation,
         confidence             = body.confidence,
+        body_location          = body.body_location,
+        image_thumb            = body.image_thumb,
     )
     db.add(scan)
     db.commit()

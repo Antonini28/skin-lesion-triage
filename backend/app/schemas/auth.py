@@ -58,6 +58,8 @@ class SaveScanRequest(BaseModel):
     malignancy_probability: float
     triage_recommendation:  str
     confidence:             float
+    body_location:          Optional[str] = None
+    image_thumb:            Optional[str] = None   # small base64 JPEG data-URL
 
 
 class ScanResponse(BaseModel):
@@ -68,6 +70,8 @@ class ScanResponse(BaseModel):
     malignancy_probability: float
     triage_recommendation:  str
     confidence:             float
+    body_location:          Optional[str] = None
+    image_thumb:            Optional[str] = None
     scanned_at:             datetime
     followed_up:            bool
     followed_up_at:         Optional[datetime]

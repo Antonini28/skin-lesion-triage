@@ -37,6 +37,8 @@ class ScanHistory(Base):
     malignancy_probability  = Column(Float)
     triage_recommendation   = Column(String)
     confidence              = Column(Float)
+    body_location           = Column(String, nullable=True)   # e.g. "Left forearm" — for mole tracking
+    image_thumb             = Column(Text, nullable=True)     # small base64 JPEG data-URL
     scanned_at              = Column(DateTime, default=datetime.utcnow)
     followed_up             = Column(Boolean, default=False)
     followed_up_at          = Column(DateTime, nullable=True)

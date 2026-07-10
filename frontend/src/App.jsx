@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import Account from './pages/Account';
 import Inbox from './pages/Inbox';
 import Login from './pages/Login';
+import Tracking from './pages/Tracking';
 import UVIndex from './pages/UVIndex';
 
 function AppInner() {
@@ -23,6 +24,7 @@ function AppInner() {
                 <Routes>
                     <Route path="/"        element={<Navigate to="/inbox" replace />} />
                     <Route path="/inbox"   element={<Inbox key={scanKey} />} />
+                    <Route path="/tracking" element={<Tracking key={scanKey} />} />
                     <Route path="/uv"      element={<UVIndex />} />
                     <Route path="/account" element={<Account />} />
                     <Route path="/login"   element={<Login />} />

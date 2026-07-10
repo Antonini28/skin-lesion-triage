@@ -2,9 +2,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-    { path: '/inbox',   label: 'Inbox'    },
-    { path: '/uv',      label: 'UV Index' },
-    { path: '/account', label: 'Account'  },
+    { path: '/inbox',    label: 'Inbox'    },
+    { path: '/tracking', label: 'Tracking' },
+    { path: '/uv',       label: 'UV Index' },
+    { path: '/account',  label: 'Account'  },
 ];
 
 export default function Header({ onScan }) {
