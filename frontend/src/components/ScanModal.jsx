@@ -24,8 +24,9 @@ export default function ScanModal({ onClose, onScanSaved }) {
             const data = await predictImage(file);
             setResult(data);
 
-            // Save to history if logged in
-            if (user) {
+            // Save to history if logged in — but never save a "no lesion detected"
+            // result, so the history can't contradict what the user was shown.
+            if (user && !data.not_detected) {
                 try {
                     await saveScan({
                         predicted_class:        data.predicted_class,
