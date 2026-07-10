@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import DermBotChat from './components/DermBotChat';
 import Footer from './components/Footer';
 import Header from './components/Header';
 import ScanModal from './components/ScanModal';
@@ -35,6 +36,8 @@ function AppInner() {
                     onScanSaved={handleScanSaved}
                 />
             )}
+            {/* Always-on DermBot assistant (general Q&A, every page) */}
+            <DermBotChat floating />
         </div>
     );
 }

@@ -122,6 +122,24 @@ YOUR RULES:
 PATIENT QUESTION: {question}"""
 
 
+_GENERAL_TEMPLATE = """\
+You are DermBot, a compassionate AI assistant specialising in skin health and dermatology,
+embedded in a skin lesion triage app. The user has not run a scan — answer their general
+question about skin health.
+
+RETRIEVED CLINICAL CONTEXT (from PubMed + dermatology guidelines):
+{context}
+
+YOUR RULES:
+1. Answer in plain English — compassionate, clear, max 120 words.
+2. Ground your answer in the retrieved context where relevant; otherwise use general knowledge.
+3. Never diagnose or claim certainty about a specific person's condition.
+4. Encourage using the app's scan feature or consulting a dermatologist for anything specific.
+5. Always recommend consulting a qualified dermatologist for concerns.
+
+USER QUESTION: {question}"""
+
+
 class DermBotService:
     def __init__(
         self,
@@ -138,16 +156,20 @@ class DermBotService:
     def answer(
         self,
         question: str,
-        predicted_class: str,
-        predicted_class_full_name: str,
-        malignancy_probability: float,
-        triage_recommendation: str,
-        risk_level: str,
-        confidence: float,
+        predicted_class: Optional[str] = None,
+        predicted_class_full_name: Optional[str] = None,
+        malignancy_probability: Optional[float] = None,
+        triage_recommendation: Optional[str] = None,
+        risk_level: Optional[str] = None,
+        confidence: Optional[float] = None,
     ) -> tuple[str, int, bool, bool]:
         """
         Returns (answer, sources_used, escalated, safety_filtered).
+
+        Scan fields are optional: when absent, DermBot answers as a general
+        skin-health assistant instead of interpreting a specific scan result.
         """
+        has_scan = bool(predicted_class_full_name)
 
         # 1. Block prompt injection
         if _INPUT_INJECTION.search(question):
@@ -158,9 +180,13 @@ class DermBotService:
 
         # 2. Pre-retrieval escalation (red-flag symptoms → skip LLM)
         if _ESCALATION.search(question):
-            answer = (
+            lead = (
                 f"The AI detected patterns consistent with {predicted_class_full_name}. "
-                f"Given the symptoms you mentioned, this may need urgent attention."
+                if has_scan else ""
+            )
+            answer = (
+                lead
+                + "Given the symptoms you mentioned, this may need urgent attention."
                 + _ESCALATION_MSG
                 + f"\n\n{DISCLAIMER}"
             )
@@ -177,16 +203,20 @@ class DermBotService:
         # 4. Gemini generation
         if self._gemini:
             try:
-                prompt = _PROMPT_TEMPLATE.format(
-                    predicted_class=predicted_class,
-                    predicted_class_full_name=predicted_class_full_name,
-                    malignancy_pct=malignancy_probability * 100,
-                    triage_recommendation=triage_recommendation,
-                    risk_level=risk_level,
-                    confidence_pct=confidence * 100,
-                    context=context,
-                    question=question,
-                )
+                if has_scan:
+                    prompt = _PROMPT_TEMPLATE.format(
+                        predicted_class=predicted_class,
+                        predicted_class_full_name=predicted_class_full_name,
+                        malignancy_pct=(malignancy_probability or 0.0) * 100,
+                        triage_recommendation=triage_recommendation,
+                        risk_level=risk_level,
+                        confidence_pct=(confidence or 0.0) * 100,
+                        context=context,
+                        question=question,
+                    )
+                else:
+                    prompt = _GENERAL_TEMPLATE.format(context=context, question=question)
+
                 resp   = self._gemini.models.generate_content(
                     model=GEMINI_MODEL,
                     contents=prompt,
@@ -224,7 +254,16 @@ class DermBotService:
     #  Static fallback (no Gemini / safety block)
     # ──────────────────────────────────────────────
 
-    def _static_fallback(self, full_name: str, risk_level: str) -> str:
+    def _static_fallback(self, full_name: Optional[str], risk_level: Optional[str]) -> str:
+        # No scan context → general guidance.
+        if not full_name:
+            return (
+                "I'm DermBot, here to help with general skin-health questions. "
+                "I can't give a diagnosis — for anything specific, run a scan in the "
+                "app or consult a qualified dermatologist, especially if a spot is "
+                "changing, bleeding, or not healing."
+                f"\n\n{DISCLAIMER}"
+            )
         high = risk_level in ("MALIGNANT", "Pre-malignant")
         if high:
             return (

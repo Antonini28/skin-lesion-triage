@@ -49,16 +49,17 @@ export const updateProfile = async (body) => {
 
 // ── DermBot ───────────────────────────────────────────────────────────────────
 
-export const askDermBot = async (question, predictionResult) => {
-  const { data } = await api.post('/chat', {
-    question,
-    predicted_class:           predictionResult.predicted_class,
-    predicted_class_full_name: predictionResult.predicted_class_full_name,
-    malignancy_probability:    predictionResult.malignancy_probability,
-    triage_recommendation:     predictionResult.triage_recommendation,
-    risk_level:                predictionResult.risk_level,
-    confidence:                predictionResult.confidence,
-  });
+export const askDermBot = async (question, predictionResult = null) => {
+  const body = { question };
+  if (predictionResult) {
+    body.predicted_class           = predictionResult.predicted_class;
+    body.predicted_class_full_name = predictionResult.predicted_class_full_name;
+    body.malignancy_probability    = predictionResult.malignancy_probability;
+    body.triage_recommendation     = predictionResult.triage_recommendation;
+    body.risk_level                = predictionResult.risk_level;
+    body.confidence                = predictionResult.confidence;
+  }
+  const { data } = await api.post('/chat', body);
   return data;
 };
 

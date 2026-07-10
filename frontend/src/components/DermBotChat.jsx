@@ -8,6 +8,13 @@ const QUICK_QUESTIONS = [
     'How accurate is this scan?',
 ];
 
+const GENERAL_QUESTIONS = [
+    'What is the ABCDE rule for moles?',
+    'What are the warning signs of skin cancer?',
+    'How often should I check my skin?',
+    'How do I lower my skin cancer risk?',
+];
+
 function BotAvatar() {
     return (
         <div className="dbc-avatar">
@@ -37,22 +44,22 @@ function EscalationBadge() {
     return <span className="dbc-escalation-badge">Urgent</span>;
 }
 
-export default function DermBotChat({ result }) {
+export default function DermBotChat({ result = null, floating = false }) {
     const [open, setOpen]         = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput]       = useState('');
     const [loading, setLoading]   = useState(false);
     const bottomRef = useRef(null);
 
+    const quickQuestions = result ? QUICK_QUESTIONS : GENERAL_QUESTIONS;
+
     // Greet when panel first opens
     useEffect(() => {
         if (open && messages.length === 0) {
-            setMessages([{
-                role:       'bot',
-                text:       `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions, grounded in clinical dermatology literature — ask me anything.`,
-                sources:    0,
-                escalated:  false,
-            }]);
+            const greeting = result
+                ? `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions, grounded in clinical dermatology literature — ask me anything.`
+                : `Hi, I'm DermBot — your skin-health assistant. Ask me anything about skin conditions, moles, or skin cancer risk. For a specific spot, run a scan and I'll explain the result.`;
+            setMessages([{ role: 'bot', text: greeting, sources: 0, escalated: false }]);
         }
     }, [open]);
 
@@ -99,18 +106,30 @@ export default function DermBotChat({ result }) {
             i % 2 === 1 ? <strong key={i}>{part}</strong> : part
         );
 
+    const BotGlyph = () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2" />
+            <circle cx="12" cy="5" r="2" />
+            <line x1="12" y1="7" x2="12" y2="11" />
+            <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="16" r="1" fill="currentColor" stroke="none" />
+        </svg>
+    );
+
     if (!open) {
+        if (floating) {
+            return (
+                <button className="dbc-fab" onClick={() => setOpen(true)} aria-label="Ask DermBot">
+                    <BotGlyph />
+                    <span className="dbc-fab-label">Ask DermBot</span>
+                </button>
+            );
+        }
         return (
             <button className="dbc-toggle" onClick={() => setOpen(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="10" rx="2" />
-                    <circle cx="12" cy="5" r="2" />
-                    <line x1="12" y1="7" x2="12" y2="11" />
-                    <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="16" cy="16" r="1" fill="currentColor" stroke="none" />
-                </svg>
+                <BotGlyph />
                 <span>Ask DermBot</span>
                 <span className="dbc-toggle-badge">RAG · AI</span>
             </button>
@@ -118,7 +137,7 @@ export default function DermBotChat({ result }) {
     }
 
     return (
-        <div className="dbc-panel">
+        <div className={`dbc-panel ${floating ? 'dbc-panel--floating' : ''}`}>
 
             {/* Header */}
             <div className="dbc-header">
@@ -166,7 +185,7 @@ export default function DermBotChat({ result }) {
             {/* Quick question pills — show only on first message */}
             {messages.length <= 1 && !loading && (
                 <div className="dbc-quick">
-                    {QUICK_QUESTIONS.map(q => (
+                    {quickQuestions.map(q => (
                         <button key={q} className="dbc-pill" onClick={() => send(q)}>
                             {q}
                         </button>
@@ -181,7 +200,7 @@ export default function DermBotChat({ result }) {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKey}
-                    placeholder="Ask about your result…"
+                    placeholder={result ? 'Ask about your result…' : 'Ask about skin health…'}
                     maxLength={500}
                     disabled={loading}
                 />

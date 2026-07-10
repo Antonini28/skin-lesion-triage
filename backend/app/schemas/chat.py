@@ -1,16 +1,19 @@
 """Pydantic schemas for the /chat (DermBot) endpoint."""
 from __future__ import annotations
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=500)
-    predicted_class: str
-    predicted_class_full_name: str
-    malignancy_probability: float = Field(..., ge=0.0, le=1.0)
-    triage_recommendation: str
-    risk_level: str
-    confidence: float = Field(..., ge=0.0, le=1.0)
+    # Scan context is optional — DermBot also answers general skin-health
+    # questions when the user hasn't run a scan.
+    predicted_class: Optional[str] = None
+    predicted_class_full_name: Optional[str] = None
+    malignancy_probability: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    triage_recommendation: Optional[str] = None
+    risk_level: Optional[str] = None
+    confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
 
 class ChatResponse(BaseModel):
