@@ -49,7 +49,7 @@ export default function DermBotChat({ result }) {
         if (open && messages.length === 0) {
             setMessages([{
                 role:       'bot',
-                text:       `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions. I'm backed by 8,719 clinical documents — ask me anything.`,
+                text:       `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions, grounded in clinical dermatology literature — ask me anything.`,
                 sources:    0,
                 escalated:  false,
             }]);
