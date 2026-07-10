@@ -6,7 +6,7 @@ export default function Footer() {
                     This tool does not provide a diagnosis. Consult a qualified dermatologist for evaluation.
                 </p>
                 <p className="footer-copy">
-                    &copy; {new Date().getFullYear()} SkinSense AI
+                    &copy; {new Date().getFullYear()} SkinSense
                 </p>
             </div>
         </footer>

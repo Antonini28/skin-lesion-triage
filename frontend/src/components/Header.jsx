@@ -25,7 +25,6 @@ export default function Header({ onScan }) {
                     </span>
                     <span className="logo-text">
                         Skin<span className="logo-accent">Sense</span>
-                        <span className="logo-ai">AI</span>
                     </span>
                 </span>
 

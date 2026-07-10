@@ -13,7 +13,7 @@ const CLASSES = [
 export default function About() {
     return (
         <main className="about-page">
-            <h1 className="page-title">About SkinSense AI</h1>
+            <h1 className="page-title">About SkinSense</h1>
 
             {/* Disclaimer */}
             <section className="about-section about-disclaimer">
