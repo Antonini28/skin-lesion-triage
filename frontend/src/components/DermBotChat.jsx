@@ -77,11 +77,16 @@ export default function DermBotChat({ result = null, floating = false }) {
         if (!q || loading) return;
 
         setInput('');
+        // Snapshot the prior turns as conversation history (exclude images).
+        const history = messages
+            .filter(m => m.text)
+            .slice(-8)
+            .map(m => ({ role: m.role, text: m.text }));
         setMessages(prev => [...prev, { role: 'user', text: q }]);
         setLoading(true);
 
         try {
-            const data = await askDermBot(q, result);
+            const data = await askDermBot(q, result, history);
             setMessages(prev => [...prev, {
                 role:      'bot',
                 text:      data.answer,

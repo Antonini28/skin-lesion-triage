@@ -49,8 +49,8 @@ export const updateProfile = async (body) => {
 
 // ── DermBot ───────────────────────────────────────────────────────────────────
 
-export const askDermBot = async (question, predictionResult = null) => {
-  const body = { question };
+export const askDermBot = async (question, predictionResult = null, history = []) => {
+  const body = { question, history };
   if (predictionResult) {
     body.predicted_class           = predictionResult.predicted_class;
     body.predicted_class_full_name = predictionResult.predicted_class_full_name;

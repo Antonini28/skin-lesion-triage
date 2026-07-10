@@ -99,7 +99,9 @@ _SELF_TREAT_MSG = (
 # ── Gemini prompt template ────────────────────────────────────────────────────
 
 _PROMPT_TEMPLATE = """\
-You are DermBot, a compassionate AI assistant embedded in a clinical skin lesion triage app.
+You are DermBot, a warm, conversational AI assistant in a clinical skin lesion triage app.
+You are chatting with a patient about their scan — this is an ongoing back-and-forth, not a
+one-off Q&A.
 
 SCAN RESULT:
   Detected class    : {predicted_class_full_name} ({predicted_class})
@@ -111,33 +113,47 @@ SCAN RESULT:
 RETRIEVED CLINICAL CONTEXT (from PubMed + dermatology guidelines):
 {context}
 
-YOUR RULES:
-1. Answer in plain English — compassionate, clear, max 120 words.
-2. Ground your answer in the retrieved context where relevant.
-3. Never say "you have [disease]" — say "the AI detected patterns consistent with…"
-4. Never give a definitive diagnosis or a numeric probability as a certainty.
-5. Always recommend consulting a qualified dermatologist.
-6. If the context is not relevant to the question, answer from general knowledge.
+CONVERSATION SO FAR:
+{history}
 
-PATIENT QUESTION: {question}"""
+HOW TO REPLY:
+- Respond naturally to the patient's latest message. Build on what was already said; do NOT
+  re-introduce yourself or repeat points you already made.
+- Warm, clear, plain English. Usually 2-4 sentences — go longer only if they ask for detail.
+- It's good to ask a short follow-up question when it helps you understand their concern.
+- Use the retrieved context where relevant; otherwise answer from general knowledge.
+- Never say "you have [disease]" — say "the AI detected patterns consistent with…". Never give
+  a definitive diagnosis or state a probability as a certainty.
+- Do NOT end every message with a disclaimer or a stock "see a dermatologist" line. Mention
+  professional care only when it is genuinely the relevant next step.
+
+PATIENT'S LATEST MESSAGE: {question}
+DermBot:"""
 
 
 _GENERAL_TEMPLATE = """\
-You are DermBot, a compassionate AI assistant specialising in skin health and dermatology,
-embedded in a skin lesion triage app. The user has not run a scan — answer their general
-question about skin health.
+You are DermBot, a warm, conversational AI assistant specialising in skin health and
+dermatology, embedded in a skin lesion triage app. The user has not run a scan. This is an
+ongoing chat, not a one-off Q&A.
 
 RETRIEVED CLINICAL CONTEXT (from PubMed + dermatology guidelines):
 {context}
 
-YOUR RULES:
-1. Answer in plain English — compassionate, clear, max 120 words.
-2. Ground your answer in the retrieved context where relevant; otherwise use general knowledge.
-3. Never diagnose or claim certainty about a specific person's condition.
-4. Encourage using the app's scan feature or consulting a dermatologist for anything specific.
-5. Always recommend consulting a qualified dermatologist for concerns.
+CONVERSATION SO FAR:
+{history}
 
-USER QUESTION: {question}"""
+HOW TO REPLY:
+- Respond naturally to the user's latest message and build on the conversation so far; do NOT
+  re-introduce yourself or repeat yourself.
+- Warm, clear, plain English. Usually 2-4 sentences — go longer only if they ask for detail.
+- Feel free to ask a short follow-up question to understand what they need.
+- Use the retrieved context where relevant; otherwise use general knowledge.
+- Never diagnose or claim certainty about a specific person's condition.
+- Suggest the app's scan feature or a dermatologist only when it's genuinely relevant — not as
+  boilerplate on every message.
+
+USER'S LATEST MESSAGE: {question}
+DermBot:"""
 
 
 _IMAGE_TEMPLATE = """\
@@ -177,6 +193,17 @@ class DermBotService:
     #  Public API
     # ──────────────────────────────────────────────
 
+    @staticmethod
+    def _format_history(history: Optional[list[tuple[str, str]]]) -> str:
+        """Render prior (role, text) turns as a readable transcript for the prompt."""
+        if not history:
+            return "(this is the start of the conversation)"
+        lines = []
+        for role, text in history:
+            who = "Patient" if role == "user" else "DermBot"
+            lines.append(f"{who}: {text}")
+        return "\n".join(lines)
+
     def answer(
         self,
         question: str,
@@ -186,17 +213,22 @@ class DermBotService:
         triage_recommendation: Optional[str] = None,
         risk_level: Optional[str] = None,
         confidence: Optional[float] = None,
+        history: Optional[list[tuple[str, str]]] = None,
     ) -> tuple[str, int, bool, bool]:
         """
         Returns (answer, sources_used, escalated, safety_filtered).
 
         Scan fields are optional: when absent, DermBot answers as a general
         skin-health assistant instead of interpreting a specific scan result.
+        ``history`` carries prior (role, text) turns so replies stay in context.
 
         For image-based questions, use ``answer_with_image`` instead — it runs
         the hybrid classifier-anchored + Gemini-vision path.
         """
         has_scan = bool(predicted_class_full_name)
+        first_turn = not history
+        high_risk = risk_level in ("MALIGNANT", "Pre-malignant")
+        history_block = self._format_history(history)
 
         # 1. Block prompt injection
         if _INPUT_INJECTION.search(question):
@@ -239,10 +271,13 @@ class DermBotService:
                         risk_level=risk_level,
                         confidence_pct=(confidence or 0.0) * 100,
                         context=context,
+                        history=history_block,
                         question=question,
                     )
                 else:
-                    prompt = _GENERAL_TEMPLATE.format(context=context, question=question)
+                    prompt = _GENERAL_TEMPLATE.format(
+                        context=context, history=history_block, question=question
+                    )
 
                 resp   = self._gemini.models.generate_content(
                     model=GEMINI_MODEL,
@@ -261,14 +296,18 @@ class DermBotService:
                 if _SELF_TREATMENT.search(question):
                     answer += _SELF_TREAT_MSG
 
-                # 5c. Ensure a referral mention exists
-                if not _NO_REFERRAL.search(answer):
+                # 5c. Ensure a referral only for high-risk scans that omit one —
+                #     not on every casual reply (that's what made it feel robotic).
+                if high_risk and not _NO_REFERRAL.search(answer):
                     answer += (
-                        " Please consult a qualified dermatologist for a professional evaluation."
+                        " Given the risk level, I'd recommend having this looked at by a "
+                        "qualified dermatologist."
                     )
 
-                # 5d. Always append disclaimer
-                answer += f"\n\n{DISCLAIMER}"
+                # 5d. Append the disclaimer sparingly: on the first reply, or whenever
+                #     the scan is high-risk — not on every follow-up message.
+                if first_turn or high_risk:
+                    answer += f"\n\n{DISCLAIMER}"
                 return answer, n_docs, False, False
 
             except Exception as exc:

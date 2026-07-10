@@ -4,8 +4,15 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class ChatTurn(BaseModel):
+    role: str            # 'user' | 'bot'
+    text: str
+
+
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=500)
+    # Prior conversation turns, oldest → newest, so DermBot can hold a thread.
+    history: list[ChatTurn] = Field(default_factory=list)
     # Scan context is optional — DermBot also answers general skin-health
     # questions when the user hasn't run a scan.
     predicted_class: Optional[str] = None

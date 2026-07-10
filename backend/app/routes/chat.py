@@ -35,6 +35,7 @@ async def chat(request: Request, body: ChatRequest):
             triage_recommendation=body.triage_recommendation,
             risk_level=body.risk_level,
             confidence=body.confidence,
+            history=[(t.role, t.text) for t in body.history],
         )
     except Exception as exc:
         logger.error("DermBot answer failed: %s", exc, exc_info=True)
