@@ -73,7 +73,7 @@ export default function Login() {
         <div className="auth-page">
             <div className="auth-card">
                 <div className="auth-logo"><HealthMark size={30} /></div>
-                <h1 className="auth-title">SkinTriage AI</h1>
+                <h1 className="auth-title">SkinSense AI</h1>
                 <p className="auth-tagline">AI-powered skin lesion triage</p>
 
                 <div className="auth-tabs">

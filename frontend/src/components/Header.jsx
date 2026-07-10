@@ -24,7 +24,7 @@ export default function Header({ onScan }) {
                         </svg>
                     </span>
                     <span className="logo-text">
-                        Skin<span className="logo-accent">Triage</span>
+                        Skin<span className="logo-accent">Sense</span>
                         <span className="logo-ai">AI</span>
                     </span>
                 </span>

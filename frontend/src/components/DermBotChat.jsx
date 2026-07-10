@@ -20,12 +20,9 @@ function BotAvatar() {
         <div className="dbc-avatar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="10" rx="2" />
-                <circle cx="12" cy="5" r="2" />
-                <line x1="12" y1="7" x2="12" y2="11" />
-                <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none" />
-                <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
-                <circle cx="16" cy="16" r="1" fill="currentColor" stroke="none" />
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <line x1="12" y1="8" x2="12" y2="13" />
+                <line x1="9.5" y1="10.5" x2="14.5" y2="10.5" />
             </svg>
         </div>
     );
@@ -65,7 +62,7 @@ export default function DermBotChat({ result = null, floating = false }) {
         if (open && messages.length === 0) {
             const greeting = result
                 ? `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions, grounded in clinical dermatology literature — ask me anything.`
-                : `Hi, I'm DermBot — your skin-health assistant. Ask me anything about skin conditions, moles, or skin cancer risk — or **upload a photo** of a spot and I'll analyse it and explain what it means.`;
+                : `Hi, I'm DermBot - how can I assist you?`;
             setMessages([{ role: 'bot', text: greeting, sources: 0, escalated: false }]);
         }
     }, [open]);
@@ -161,12 +158,9 @@ export default function DermBotChat({ result = null, floating = false }) {
     const BotGlyph = () => (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="10" rx="2" />
-            <circle cx="12" cy="5" r="2" />
-            <line x1="12" y1="7" x2="12" y2="11" />
-            <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
-            <circle cx="16" cy="16" r="1" fill="currentColor" stroke="none" />
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <line x1="12" y1="8" x2="12" y2="13" />
+            <line x1="9.5" y1="10.5" x2="14.5" y2="10.5" />
         </svg>
     );
 
@@ -197,7 +191,6 @@ export default function DermBotChat({ result = null, floating = false }) {
                     <BotAvatar />
                     <div>
                         <span className="dbc-header-name">DermBot</span>
-                        <span className="dbc-header-sub">RAG-grounded · Gemini 2.5</span>
                     </div>
                 </div>
                 <button className="dbc-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
