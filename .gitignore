@@ -53,3 +53,7 @@ timeline_horizon_scan.png
 sample_slides/
 sample_images_per_class.png
 frontend/.claude/
+
+# ── Curated project docs (slides + reports) ARE tracked ──
+!docs/
+!docs/**
