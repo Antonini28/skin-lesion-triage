@@ -40,7 +40,7 @@ import numpy as np
 
 EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
 EMBED_DIM = int(os.getenv("GEMINI_EMBED_DIM", "768"))
-BATCH = 100  # Gemini embed_content accepts a list of contents per call
+BATCH = int(os.getenv("EMBED_BATCH", "25"))  # docs per embed_content request
 
 
 def load_docs(path: Path) -> list[dict]:
@@ -54,7 +54,16 @@ def doc_text(doc: dict) -> str:
     return (doc.get("text") or doc.get("answer") or doc.get("abstract") or "").strip()
 
 
-def embed_all(docs: list[dict]) -> np.ndarray:
+PACE = float(os.getenv("PACE_SECONDS", "1.5"))   # gap between requests (free-tier RPM)
+MAX_CHARS = int(os.getenv("EMBED_MAX_CHARS", "2000"))  # cap tokens/request
+
+
+def embed_all(docs: list[dict], ckpt: Path | None = None) -> np.ndarray:
+    """Embed every doc, pacing for free-tier limits and checkpointing to disk.
+
+    Progress is saved to ``ckpt`` (a .npy of shape [done, EMBED_DIM]) after every
+    batch, so a re-run resumes from where a rate-limit/interrupt left off.
+    """
     import google.genai as genai
     from google.genai import types
 
@@ -66,33 +75,43 @@ def embed_all(docs: list[dict]) -> np.ndarray:
         output_dimensionality=EMBED_DIM, task_type="RETRIEVAL_DOCUMENT"
     )
 
-    texts = [doc_text(d) or " " for d in docs]
-    vectors: list[list[float]] = []
-    t0 = time.time()
+    texts = [(doc_text(d) or " ")[:MAX_CHARS] for d in docs]
 
-    for start in range(0, len(texts), BATCH):
+    # Resume from checkpoint if present.
+    vectors: list[list[float]] = []
+    if ckpt and ckpt.exists():
+        prev = np.load(ckpt)
+        vectors = prev.tolist()
+        print(f"Resuming from checkpoint: {len(vectors):,} already embedded")
+
+    t0 = time.time()
+    start = len(vectors)
+    while start < len(texts):
         batch = texts[start : start + BATCH]
-        # Truncate very long passages to keep well under the token limit.
-        batch = [t[:8000] for t in batch]
-        for attempt in range(6):
+        for attempt in range(9):
             try:
-                resp = client.models.embed_content(
-                    model=EMBED_MODEL, contents=batch, config=cfg
-                )
+                resp = client.models.embed_content(model=EMBED_MODEL, contents=batch, config=cfg)
                 embs = resp.embeddings if getattr(resp, "embeddings", None) else [resp.embedding]
                 vectors.extend(e.values for e in embs)
                 break
-            except Exception as exc:  # transient rate limits → back off and retry
-                wait = 2 ** attempt
-                print(f"  batch {start}: {str(exc)[:100]} — retrying in {wait}s")
+            except Exception as exc:
+                wait = min(2 ** attempt, 90)
+                print(f"  batch {start}: {str(exc)[:80]} — retry in {wait}s", flush=True)
                 time.sleep(wait)
         else:
-            raise SystemExit(f"Failed to embed batch starting at {start}")
+            # Persist partial progress before giving up so a re-run resumes.
+            if ckpt:
+                np.save(ckpt, np.asarray(vectors, dtype=np.float32))
+            raise SystemExit(f"Stuck at batch {start} — checkpoint saved ({len(vectors)} done). Re-run to resume.")
 
-        done = min(start + BATCH, len(texts))
-        print(f"  embedded {done:,}/{len(texts):,}  ({time.time() - t0:.0f}s)")
+        if ckpt:
+            np.save(ckpt, np.asarray(vectors, dtype=np.float32))
+        done = len(vectors)
+        print(f"  embedded {done:,}/{len(texts):,}  ({time.time() - t0:.0f}s)", flush=True)
+        start = done
+        time.sleep(PACE)
 
-    matrix = np.asarray(vectors, dtype=np.float32)
+    matrix = np.asarray(vectors, dtype=np.float32)[: len(texts)]
     print(f"Embeddings matrix: {matrix.shape}  ({matrix.nbytes / 1e6:.1f} MB)")
     return matrix
 
@@ -128,7 +147,8 @@ def main() -> None:
     out_path = Path(args.out)
 
     docs = load_docs(docs_path)
-    matrix = embed_all(docs)
+    ckpt = out_path.with_suffix(".partial.npy")
+    matrix = embed_all(docs, ckpt=ckpt)
 
     if matrix.shape[0] != len(docs):
         raise SystemExit(f"Count mismatch: {matrix.shape[0]} embeddings vs {len(docs)} docs")
