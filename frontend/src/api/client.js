@@ -63,6 +63,16 @@ export const askDermBot = async (question, predictionResult = null) => {
   return data;
 };
 
+export const askDermBotImage = async (file, question = '') => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('question', question || '');
+  const { data } = await api.post('/chat/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
 // ── Scan history ──────────────────────────────────────────────────────────────
 
 export const saveScan = async (scanData) => {

@@ -76,6 +76,7 @@ async def lifespan(app: FastAPI):
             threshold_config=threshold_cfg,
             device=device,
         )
+        app.state.inference = inference_service  # used by /chat/image
         logger.info("✅ Inference models loaded")
     except Exception as exc:
         logger.error("❌ Model loading failed: %s", exc, exc_info=True)

@@ -140,6 +140,30 @@ YOUR RULES:
 USER QUESTION: {question}"""
 
 
+_IMAGE_TEMPLATE = """\
+You are DermBot, a compassionate AI assistant in a clinical skin lesion triage app.
+
+The app's TRAINED triage model already analysed the attached image (this is the
+authoritative result — do not contradict it):
+  Detected class    : {full_name} ({code})
+  Malignancy score  : {mal_pct:.1f}%
+  Triage decision   : {triage}
+  Risk level        : {risk}
+  Model confidence  : {conf_pct:.1f}%
+
+RETRIEVED CLINICAL CONTEXT (from PubMed + dermatology guidelines):
+{context}
+
+Look at the attached image and explain the result to the user. RULES:
+1. Anchor to the model's classification above — do NOT offer a different diagnosis.
+2. Plain English, compassionate, max 140 words.
+3. Briefly describe visual features in the image that are consistent with {full_name}.
+4. Never say "you have [disease]" — say "the AI detected patterns consistent with…".
+5. Explain what it means and the sensible next step; recommend a qualified dermatologist.
+
+USER QUESTION (may be empty): {question}"""
+
+
 class DermBotService:
     def __init__(
         self,
@@ -168,6 +192,9 @@ class DermBotService:
 
         Scan fields are optional: when absent, DermBot answers as a general
         skin-health assistant instead of interpreting a specific scan result.
+
+        For image-based questions, use ``answer_with_image`` instead — it runs
+        the hybrid classifier-anchored + Gemini-vision path.
         """
         has_scan = bool(predicted_class_full_name)
 
@@ -249,6 +276,83 @@ class DermBotService:
 
         # Fallback when Gemini is unavailable
         return self._static_fallback(predicted_class_full_name, risk_level), 0, False, False
+
+    # ──────────────────────────────────────────────
+    #  Image discussion (hybrid: classifier label + Gemini vision)
+    # ──────────────────────────────────────────────
+
+    def answer_with_image(
+        self,
+        image_bytes: bytes,
+        mime_type: str,
+        result,
+        question: str = "",
+    ) -> tuple[str, int, bool, bool]:
+        """
+        Discuss an uploaded image, anchored to the trained model's classification.
+
+        `result` is the PredictionResponse from the triage model. Returns
+        (answer, sources_used, escalated, safety_filtered).
+        """
+        full = result.predicted_class_full_name
+        risk = result.risk_level
+        q = (question or "").strip()
+
+        # No lesion detected → don't discuss a disease.
+        if getattr(result, "not_detected", False):
+            msg = (
+                "I couldn't detect a clear skin lesion in that image. Try a closer, "
+                "well-lit photo of the specific spot. If you're worried about a spot — "
+                "especially one that's changing, bleeding, or not healing — please see "
+                "a dermatologist."
+                f"\n\n{DISCLAIMER}"
+            )
+            return msg, 0, False, False
+
+        # Block prompt injection in the accompanying question.
+        if q and _INPUT_INJECTION.search(q):
+            return self._static_fallback(full, risk), 0, False, True
+
+        # RAG grounding on the detected condition + question.
+        if self._rag is not None:
+            passages = self._rag.retrieve(f"{full}. {q}".strip())
+            context = self._rag.format_context(passages)
+        else:
+            passages, context = [], "No relevant clinical context retrieved."
+        n_docs = len(passages)
+
+        if self._gemini:
+            try:
+                from google.genai import types
+
+                prompt = _IMAGE_TEMPLATE.format(
+                    full_name=full,
+                    code=result.predicted_class,
+                    mal_pct=(result.malignancy_probability or 0.0) * 100,
+                    triage=result.triage_recommendation,
+                    risk=risk,
+                    conf_pct=(result.confidence or 0.0) * 100,
+                    context=context,
+                    question=q or "(none)",
+                )
+                img_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                resp = self._gemini.models.generate_content(
+                    model=GEMINI_MODEL, contents=[prompt, img_part]
+                )
+                answer = resp.text.strip()
+
+                if _BLOCKED_OUTPUT.search(answer):
+                    return self._static_fallback(full, risk), n_docs, False, True
+                if _SELF_TREATMENT.search(q):
+                    answer += _SELF_TREAT_MSG
+                if not _NO_REFERRAL.search(answer):
+                    answer += " Please consult a qualified dermatologist for a professional evaluation."
+                answer += f"\n\n{DISCLAIMER}"
+                return answer, n_docs, False, False
+            except Exception as exc:
+                logger.warning("DermBot: image answer failed: %s", exc)
+
+        return self._static_fallback(full, risk), n_docs, False, False
 
     # ──────────────────────────────────────────────
     #  Static fallback (no Gemini / safety block)

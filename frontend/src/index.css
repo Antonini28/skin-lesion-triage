@@ -762,6 +762,43 @@ a { color: var(--blue); text-decoration: none; }
 .dbc-send:hover:not(:disabled) { background: var(--blue-dark); }
 .dbc-send:disabled { opacity: 0.45; cursor: not-allowed; }
 
+.dbc-attach {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  background: #fff; color: var(--blue); border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: all 0.18s;
+}
+.dbc-attach:hover:not(:disabled) { border-color: var(--blue); background: #f0f6ff; }
+.dbc-attach:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Uploaded image inside a chat bubble */
+.dbc-msg-img {
+  display: block; width: 100%; max-width: 200px; max-height: 200px;
+  object-fit: cover; border-radius: var(--radius-md);
+  margin-bottom: 0.4rem;
+}
+.dbc-msg-text { line-height: 1.5; }
+
+/* Triage result chip under a DermBot image reply */
+.dbc-result-chip {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  margin-top: 0.4rem; padding: 5px 10px;
+  border-radius: 8px; font-size: 0.72rem; font-weight: 600;
+  border: 1px solid var(--border); background: #fff;
+}
+.dbc-result-name { color: var(--text-primary); }
+.dbc-result-risk {
+  text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: 0.62rem; font-weight: 800;
+  padding: 2px 7px; border-radius: 5px;
+}
+.dbc-result-chip--malignant    { border-color: #f3c0bb; background: #fff5f4; }
+.dbc-result-chip--malignant    .dbc-result-risk { background: #fde3e0; color: #c0392b; }
+.dbc-result-chip--premalignant { border-color: #f6ddb8; background: #fffaf1; }
+.dbc-result-chip--premalignant .dbc-result-risk { background: #fbeacb; color: #b9770e; }
+.dbc-result-chip--benign       { border-color: #bfe6cf; background: #f4fbf7; }
+.dbc-result-chip--benign       .dbc-result-risk { background: #d6f0e1; color: #1e7e50; }
+
 /* ══ Risk Badge ══ */
 .risk-badge {
   font-size: 0.66rem; font-weight: 700;

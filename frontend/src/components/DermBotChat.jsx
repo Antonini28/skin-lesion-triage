@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { askDermBot } from '../api/client';
+import { askDermBot, askDermBotImage } from '../api/client';
 
 const QUICK_QUESTIONS = [
     'What does this result mean?',
@@ -44,12 +44,19 @@ function EscalationBadge() {
     return <span className="dbc-escalation-badge">Urgent</span>;
 }
 
+function riskClass(risk) {
+    if (risk === 'MALIGNANT') return 'malignant';
+    if (risk === 'Pre-malignant') return 'premalignant';
+    return 'benign';
+}
+
 export default function DermBotChat({ result = null, floating = false }) {
     const [open, setOpen]         = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput]       = useState('');
     const [loading, setLoading]   = useState(false);
     const bottomRef = useRef(null);
+    const fileRef   = useRef(null);
 
     const quickQuestions = result ? QUICK_QUESTIONS : GENERAL_QUESTIONS;
 
@@ -58,7 +65,7 @@ export default function DermBotChat({ result = null, floating = false }) {
         if (open && messages.length === 0) {
             const greeting = result
                 ? `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions, grounded in clinical dermatology literature — ask me anything.`
-                : `Hi, I'm DermBot — your skin-health assistant. Ask me anything about skin conditions, moles, or skin cancer risk. For a specific spot, run a scan and I'll explain the result.`;
+                : `Hi, I'm DermBot — your skin-health assistant. Ask me anything about skin conditions, moles, or skin cancer risk — or **upload a photo** of a spot and I'll analyse it and explain what it means.`;
             setMessages([{ role: 'bot', text: greeting, sources: 0, escalated: false }]);
         }
     }, [open]);
@@ -94,6 +101,51 @@ export default function DermBotChat({ result = null, floating = false }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const sendImage = async (file) => {
+        if (!file || loading) return;
+        if (!/^image\/(jpe?g|png)$/.test(file.type)) {
+            setMessages(prev => [...prev, {
+                role: 'bot', text: 'Please upload a JPG or PNG image.', sources: 0, escalated: false,
+            }]);
+            return;
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        setMessages(prev => [...prev, { role: 'user', text: input.trim(), image: previewUrl }]);
+        const q = input.trim();
+        setInput('');
+        setLoading(true);
+
+        try {
+            const data = await askDermBotImage(file, q);
+            setMessages(prev => [...prev, {
+                role:      'bot',
+                text:      data.answer,
+                sources:   data.sources_used,
+                escalated: data.escalated,
+                result:    data.not_detected ? null : {
+                    full:  data.predicted_class_full_name,
+                    risk:  data.risk_level,
+                    triage: data.triage_recommendation,
+                },
+            }]);
+        } catch {
+            setMessages(prev => [...prev, {
+                role: 'bot',
+                text: 'Sorry, I could not analyse that image right now. Please try again in a moment.',
+                sources: 0, escalated: false,
+            }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onPickFile = (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';          // allow re-selecting the same file
+        if (file) sendImage(file);
     };
 
     const handleKey = (e) => {
@@ -145,7 +197,7 @@ export default function DermBotChat({ result = null, floating = false }) {
                     <BotAvatar />
                     <div>
                         <span className="dbc-header-name">DermBot</span>
-                        <span className="dbc-header-sub">RAG-grounded · Gemini 2.0</span>
+                        <span className="dbc-header-sub">RAG-grounded · Gemini 2.5</span>
                     </div>
                 </div>
                 <button className="dbc-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
@@ -158,8 +210,17 @@ export default function DermBotChat({ result = null, floating = false }) {
                         {msg.role === 'bot' && <BotAvatar />}
                         <div className="dbc-bubble-wrap">
                             <div className={`dbc-bubble dbc-bubble--${msg.role} ${msg.escalated ? 'dbc-bubble--escalated' : ''}`}>
-                                {renderText(msg.text)}
+                                {msg.image && (
+                                    <img className="dbc-msg-img" src={msg.image} alt="uploaded lesion" />
+                                )}
+                                {msg.text && <div className="dbc-msg-text">{renderText(msg.text)}</div>}
                             </div>
+                            {msg.result && (
+                                <div className={`dbc-result-chip dbc-result-chip--${riskClass(msg.result.risk)}`}>
+                                    <span className="dbc-result-name">{msg.result.full}</span>
+                                    <span className="dbc-result-risk">{msg.result.risk}</span>
+                                </div>
+                            )}
                             {msg.role === 'bot' && (
                                 <div className="dbc-meta">
                                     {msg.escalated && <EscalationBadge />}
@@ -196,11 +257,32 @@ export default function DermBotChat({ result = null, floating = false }) {
             {/* Input row */}
             <div className="dbc-input-row">
                 <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    style={{ display: 'none' }}
+                    onChange={onPickFile}
+                />
+                <button
+                    className="dbc-attach"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={loading}
+                    aria-label="Upload a skin photo"
+                    title="Upload a skin photo"
+                >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                </button>
+                <input
                     className="dbc-input"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKey}
-                    placeholder={result ? 'Ask about your result…' : 'Ask about skin health…'}
+                    placeholder={result ? 'Ask about your result…' : 'Ask, or upload a photo…'}
                     maxLength={500}
                     disabled={loading}
                 />

@@ -36,3 +36,20 @@ Thumbs.db
 # ── IDE ──
 .vscode/
 .idea/
+
+# ── Research artifacts / reports (NOT part of the deployed app) ──
+skin bot/
+*.ipynb
+*.pptx
+*.docx
+~$*
+nb_dump.txt
+DOCBOT_IMPLEMENTATION_PLAN.md
+Horizon_Scan_Report_*
+build_report_docx.py
+generate_*.py
+section*.png
+timeline_horizon_scan.png
+sample_slides/
+sample_images_per_class.png
+frontend/.claude/

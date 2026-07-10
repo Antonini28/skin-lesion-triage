@@ -22,3 +22,20 @@ class ChatResponse(BaseModel):
     escalated: bool = Field(default=False, description="True if red-flag escalation fired")
     safety_filtered: bool = False
     disclaimer: str
+
+
+class ImageChatResponse(BaseModel):
+    """Response for /chat/image — the triage prediction plus DermBot's discussion."""
+    answer: str
+    sources_used: int = 0
+    escalated: bool = False
+    safety_filtered: bool = False
+    disclaimer: str
+    # Authoritative result from the trained triage model
+    predicted_class: Optional[str] = None
+    predicted_class_full_name: Optional[str] = None
+    risk_level: Optional[str] = None
+    malignancy_probability: Optional[float] = None
+    triage_recommendation: Optional[str] = None
+    confidence: Optional[float] = None
+    not_detected: bool = False
