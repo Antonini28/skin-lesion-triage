@@ -52,6 +52,7 @@ export default function DermBotChat({ result = null, floating = false }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput]       = useState('');
     const [loading, setLoading]   = useState(false);
+    const [typing, setTyping]     = useState(null);   // full text currently being typed out
     const bottomRef = useRef(null);
     const fileRef   = useRef(null);
 
@@ -72,9 +73,35 @@ export default function DermBotChat({ result = null, floating = false }) {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, loading]);
 
+    // Append a bot reply and type it out, so the user watches it being written.
+    const streamBotAnswer = ({ text, ...meta }) => {
+        setMessages(prev => [...prev, { role: 'bot', text: '', ...meta }]);
+        setTyping({ full: text });
+    };
+
+    // Typewriter: progressively reveal the last bot message.
+    useEffect(() => {
+        if (!typing) return;
+        const full = typing.full || '';
+        let i = 0;
+        const step = Math.max(2, Math.round(full.length / 70));   // ~70 frames total
+        const id = setInterval(() => {
+            i = Math.min(full.length, i + step);
+            const shown = full.slice(0, i);
+            setMessages(prev => {
+                const c = [...prev];
+                const last = c[c.length - 1];
+                if (last && last.role === 'bot') c[c.length - 1] = { ...last, text: shown };
+                return c;
+            });
+            if (i >= full.length) { clearInterval(id); setTyping(null); }
+        }, 18);
+        return () => clearInterval(id);
+    }, [typing]);
+
     const send = async (text) => {
         const q = text.trim();
-        if (!q || loading) return;
+        if (!q || loading || typing) return;
 
         setInput('');
         // Snapshot the prior turns as conversation history (exclude images).
@@ -87,12 +114,11 @@ export default function DermBotChat({ result = null, floating = false }) {
 
         try {
             const data = await askDermBot(q, result, history);
-            setMessages(prev => [...prev, {
-                role:      'bot',
+            streamBotAnswer({
                 text:      data.answer,
                 sources:   data.sources_used,
                 escalated: data.escalated,
-            }]);
+            });
         } catch {
             setMessages(prev => [...prev, {
                 role:     'bot',
@@ -106,7 +132,7 @@ export default function DermBotChat({ result = null, floating = false }) {
     };
 
     const sendImage = async (file) => {
-        if (!file || loading) return;
+        if (!file || loading || typing) return;
         if (!/^image\/(jpe?g|png)$/.test(file.type)) {
             setMessages(prev => [...prev, {
                 role: 'bot', text: 'Please upload a JPG or PNG image.', sources: 0, escalated: false,
@@ -122,8 +148,7 @@ export default function DermBotChat({ result = null, floating = false }) {
 
         try {
             const data = await askDermBotImage(file, q);
-            setMessages(prev => [...prev, {
-                role:      'bot',
+            streamBotAnswer({
                 text:      data.answer,
                 sources:   data.sources_used,
                 escalated: data.escalated,
@@ -132,7 +157,7 @@ export default function DermBotChat({ result = null, floating = false }) {
                     risk:  data.risk_level,
                     triage: data.triage_recommendation,
                 },
-            }]);
+            });
         } catch {
             setMessages(prev => [...prev, {
                 role: 'bot',
@@ -264,7 +289,7 @@ export default function DermBotChat({ result = null, floating = false }) {
                 <button
                     className="dbc-attach"
                     onClick={() => fileRef.current?.click()}
-                    disabled={loading}
+                    disabled={loading || !!typing}
                     aria-label="Upload a skin photo"
                     title="Upload a skin photo"
                 >
@@ -282,12 +307,12 @@ export default function DermBotChat({ result = null, floating = false }) {
                     onKeyDown={handleKey}
                     placeholder={result ? 'Ask about your result…' : 'Ask, or upload a photo…'}
                     maxLength={500}
-                    disabled={loading}
+                    disabled={loading || !!typing}
                 />
                 <button
                     className="dbc-send"
                     onClick={() => send(input)}
-                    disabled={!input.trim() || loading}
+                    disabled={!input.trim() || loading || !!typing}
                     aria-label="Send"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"

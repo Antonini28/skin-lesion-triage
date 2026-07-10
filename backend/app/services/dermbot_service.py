@@ -226,7 +226,6 @@ class DermBotService:
         the hybrid classifier-anchored + Gemini-vision path.
         """
         has_scan = bool(predicted_class_full_name)
-        first_turn = not history
         high_risk = risk_level in ("MALIGNANT", "Pre-malignant")
         history_block = self._format_history(history)
 
@@ -247,7 +246,6 @@ class DermBotService:
                 lead
                 + "Given the symptoms you mentioned, this may need urgent attention."
                 + _ESCALATION_MSG
-                + f"\n\n{DISCLAIMER}"
             )
             return answer, 0, True, False
 
@@ -304,10 +302,7 @@ class DermBotService:
                         "qualified dermatologist."
                     )
 
-                # 5d. Append the disclaimer sparingly: on the first reply, or whenever
-                #     the scan is high-risk — not on every follow-up message.
-                if first_turn or high_risk:
-                    answer += f"\n\n{DISCLAIMER}"
+                # The standing disclaimer is shown in the app UI, not repeated in chat.
                 return answer, n_docs, False, False
 
             except Exception as exc:
@@ -384,9 +379,6 @@ class DermBotService:
                     return self._static_fallback(full, risk), n_docs, False, True
                 if _SELF_TREATMENT.search(q):
                     answer += _SELF_TREAT_MSG
-                if not _NO_REFERRAL.search(answer):
-                    answer += " Please consult a qualified dermatologist for a professional evaluation."
-                answer += f"\n\n{DISCLAIMER}"
                 return answer, n_docs, False, False
             except Exception as exc:
                 logger.warning("DermBot: image answer failed: %s", exc)
@@ -405,7 +397,6 @@ class DermBotService:
                 "I can't give a diagnosis — for anything specific, run a scan in the "
                 "app or consult a qualified dermatologist, especially if a spot is "
                 "changing, bleeding, or not healing."
-                f"\n\n{DISCLAIMER}"
             )
         high = risk_level in ("MALIGNANT", "Pre-malignant")
         if high:
@@ -414,12 +405,10 @@ class DermBotService:
                 f"Given the risk classification, we strongly recommend booking "
                 f"an appointment with a dermatologist as soon as possible — "
                 f"early evaluation is important. This tool screens; it does not diagnose."
-                f"\n\n{DISCLAIMER}"
             )
         return (
             f"The AI detected patterns consistent with {full_name}, which is "
             f"classified as low risk. Continue monitoring for any changes in size, "
             f"colour, or shape, and mention it at your next routine check-up with "
             f"your GP or dermatologist."
-            f"\n\n{DISCLAIMER}"
         )
