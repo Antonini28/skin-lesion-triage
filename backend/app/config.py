@@ -6,6 +6,27 @@ import os
 from pathlib import Path
 
 # ──────────────────────────────────────────────
+#  DermBot / Gemini
+# ──────────────────────────────────────────────
+# Generation model (chat answers) + embedding model (RAG query encoding).
+# Both run through the free Gemini API — no local ML model is loaded at
+# runtime, so DermBot fits comfortably inside Render's 512 MB free tier.
+GEMINI_API_KEY:     str = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL:       str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_EMBED_MODEL: str = os.getenv("GEMINI_EMBED_MODEL", "text-embedding-004")
+
+# ──────────────────────────────────────────────
+#  RAG artifacts (stored in HF Hub repo, optional)
+# ──────────────────────────────────────────────
+# Pre-computed once with build_rag_embeddings.py and uploaded to HF Hub.
+#   dermbot_embeddings.npy → float32 matrix [n_docs, 768] (Gemini embeddings)
+#   dermbot_docs.pkl       → list[dict] with keys {text, source, title}
+# If these are absent, DermBot degrades gracefully to LLM-only answers.
+RAG_EMBEDDINGS_FILE: str = "dermbot_embeddings.npy"
+DOCS_STORE_FILE:     str = "dermbot_docs.pkl"
+RAG_TOP_K:           int = 5
+
+# ──────────────────────────────────────────────
 #  Hugging Face Hub
 # ──────────────────────────────────────────────
 HF_REPO_ID: str = os.getenv("HF_REPO_ID", "Stoic1344223/skin-lesion-triage-models")

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authLogin, authRegister } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { HealthMark } from '../components/Icons';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -71,7 +72,7 @@ export default function Login() {
     return (
         <div className="auth-page">
             <div className="auth-card">
-                <div className="auth-logo">🔬</div>
+                <div className="auth-logo"><HealthMark size={30} /></div>
                 <h1 className="auth-title">SkinTriage AI</h1>
                 <p className="auth-tagline">AI-powered skin lesion triage</p>
 

@@ -11,14 +11,32 @@ import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import FRONTEND_URL, STUDENT_CHECKPOINT, RL_POLICY_CHECKPOINT, THRESHOLD_CONFIG_FILE
+from app.config import (
+    DOCS_STORE_FILE,
+    FRONTEND_URL,
+    GEMINI_EMBED_MODEL,
+    RAG_EMBEDDINGS_FILE,
+    RAG_TOP_K,
+    RL_POLICY_CHECKPOINT,
+    STUDENT_CHECKPOINT,
+    THRESHOLD_CONFIG_FILE,
+)
 from app.database import Base, engine
 from app.models import db_models  # noqa: F401 — registers ORM models with Base
 from app.routes import auth as auth_routes
+from app.routes import chat as chat_routes
 from app.routes import scans as scans_routes
 from app.schemas.prediction import HealthResponse, PredictionResponse
+from app.services.dermbot_service import DermBotService, build_gemini_client
 from app.services.inference import InferenceService
-from app.services.model_loader import download_all, load_rl_policy, load_student_model, load_threshold_config
+from app.services.model_loader import (
+    download_all,
+    download_rag_artifacts,
+    load_rl_policy,
+    load_student_model,
+    load_threshold_config,
+)
+from app.services.rag_service import RAGService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,9 +75,39 @@ async def lifespan(app: FastAPI):
             threshold_config=threshold_cfg,
             device=device,
         )
-        logger.info("✅ All models loaded — server ready!")
+        logger.info("✅ Inference models loaded")
     except Exception as exc:
         logger.error("❌ Model loading failed: %s", exc, exc_info=True)
+
+    # ── DermBot (RAG + Gemini) ─────────────────────────────────────────────
+    # Never fatal to prediction: any failure here leaves /predict working and
+    # DermBot degrades to LLM-only (or static) answers.
+    try:
+        gemini_client = build_gemini_client()
+
+        rag = None
+        rag_paths = download_rag_artifacts()
+        if rag_paths:
+            try:
+                rag = RAGService(
+                    embeddings_path=rag_paths[RAG_EMBEDDINGS_FILE],
+                    docs_path=rag_paths[DOCS_STORE_FILE],
+                    gemini_client=gemini_client,
+                    embed_model=GEMINI_EMBED_MODEL,
+                    top_k=RAG_TOP_K,
+                )
+            except Exception as exc:
+                logger.warning("RAG index failed to load — LLM-only DermBot: %s", exc)
+        else:
+            logger.info("RAG artifacts not found — DermBot running LLM-only")
+
+        app.state.dermbot = DermBotService(rag=rag, gemini_client=gemini_client)
+        logger.info("✅ DermBot ready (RAG=%s, Gemini=%s)",
+                    "on" if rag else "off",
+                    "on" if gemini_client else "off")
+    except Exception as exc:
+        logger.error("❌ DermBot loading failed: %s", exc, exc_info=True)
+        app.state.dermbot = None
 
     yield
     logger.info("Shutting down …")
@@ -68,8 +116,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Skin Lesion Triage API",
     description=(
-        "Classify dermoscopic images into 7 lesion categories and provide "
-        "a malignancy triage recommendation."
+        "Classify dermoscopic images into 7 lesion categories (plus a "
+        "no-lesion class) and provide a malignancy triage recommendation."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -91,6 +139,7 @@ app.add_middleware(
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth_routes.router)
 app.include_router(scans_routes.router)
+app.include_router(chat_routes.router)
 
 
 # ── Core endpoints ────────────────────────────────────────────────────────────

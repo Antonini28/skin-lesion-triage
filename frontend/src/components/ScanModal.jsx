@@ -3,6 +3,7 @@ import { checkHealth, predictImage, saveScan } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import ImageUpload from './ImageUpload';
 import ResultsPanel from './ResultsPanel';
+import { AlertTriangle, Lightbulb } from './Icons';
 
 export default function ScanModal({ onClose, onScanSaved }) {
     const { user }                      = useAuth();
@@ -72,12 +73,12 @@ export default function ScanModal({ onClose, onScanSaved }) {
                             <ImageUpload onUpload={handleUpload} loading={loading} />
                             {error && (
                                 <div className="error-banner" style={{ marginTop: '1rem' }}>
-                                    <span>⚠️</span><span>{error}</span>
+                                    <AlertTriangle size={18} /><span>{error}</span>
                                 </div>
                             )}
                             {!loading && !user && (
                                 <p className="scan-modal-legal">
-                                    💡 <strong>Log in</strong> to save your scan results to your history.
+                                    <Lightbulb size={15} /> <strong>Log in</strong> to save your scan results to your history.
                                 </p>
                             )}
                             {!loading && user && (

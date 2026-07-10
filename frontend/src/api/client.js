@@ -47,6 +47,21 @@ export const updateProfile = async (body) => {
   return data;
 };
 
+// ── DermBot ───────────────────────────────────────────────────────────────────
+
+export const askDermBot = async (question, predictionResult) => {
+  const { data } = await api.post('/chat', {
+    question,
+    predicted_class:           predictionResult.predicted_class,
+    predicted_class_full_name: predictionResult.predicted_class_full_name,
+    malignancy_probability:    predictionResult.malignancy_probability,
+    triage_recommendation:     predictionResult.triage_recommendation,
+    risk_level:                predictionResult.risk_level,
+    confidence:                predictionResult.confidence,
+  });
+  return data;
+};
+
 // ── Scan history ──────────────────────────────────────────────────────────────
 
 export const saveScan = async (scanData) => {

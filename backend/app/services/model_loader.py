@@ -14,11 +14,13 @@ from pathlib import Path
 import torch
 
 from app.config import (
+    DOCS_STORE_FILE,
     HF_REPO_ID,
     MODEL_CACHE_DIR,
     NUM_CLASSES,
-    STUDENT_CHECKPOINT,
+    RAG_EMBEDDINGS_FILE,
     RL_POLICY_CHECKPOINT,
+    STUDENT_CHECKPOINT,
     THRESHOLD_CONFIG_FILE,
 )
 from app.models.skin_model import create_student_model
@@ -58,8 +60,9 @@ def _try_local_path(filename: str) -> str | None:
 
 def download_all(repo_id: str | None = None, cache_dir: str | None = None) -> dict[str, str]:
     """
-    Ensure all required checkpoint / config files are available
-    locally.  Returns a dict mapping logical name → local path.
+    Ensure the *critical* inference checkpoints are available locally.
+    Returns a dict mapping logical name → local path. Raises if any file
+    is missing (the API cannot serve predictions without these).
     """
     repo_id = repo_id or HF_REPO_ID
     cache_dir = cache_dir or MODEL_CACHE_DIR
@@ -81,6 +84,36 @@ def download_all(repo_id: str | None = None, cache_dir: str | None = None) -> di
             logger.info("Downloading %s from %s …", fname, repo_id)
             paths[fname] = _download_file(repo_id, fname, cache_dir)
             logger.info("Downloaded → %s", paths[fname])
+
+    return paths
+
+
+def download_rag_artifacts(
+    repo_id: str | None = None, cache_dir: str | None = None
+) -> dict[str, str] | None:
+    """
+    Fetch the *optional* DermBot RAG artifacts (embeddings matrix + doc store).
+
+    Returns a dict {logical name → local path} when both files are available,
+    or ``None`` if either is missing. A missing RAG index is non-fatal: DermBot
+    falls back to LLM-only answers and image prediction is unaffected.
+    """
+    repo_id = repo_id or HF_REPO_ID
+    cache_dir = cache_dir or MODEL_CACHE_DIR
+    os.makedirs(cache_dir, exist_ok=True)
+
+    paths: dict[str, str] = {}
+    for fname in (RAG_EMBEDDINGS_FILE, DOCS_STORE_FILE):
+        local = _try_local_path(fname)
+        if local:
+            paths[fname] = local
+            continue
+        try:
+            logger.info("Downloading RAG artifact %s from %s …", fname, repo_id)
+            paths[fname] = _download_file(repo_id, fname, cache_dir)
+        except Exception as exc:
+            logger.warning("RAG artifact %s unavailable (%s) — RAG disabled", fname, exc)
+            return None
 
     return paths
 

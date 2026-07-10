@@ -1,4 +1,6 @@
 import RiskBadge from './RiskBadge';
+import DermBotChat from './DermBotChat';
+import { ShieldCheck, ShieldAlert } from './Icons';
 
 const REFER_TIPS = [
     'Schedule an appointment with a dermatologist as soon as possible.',
@@ -13,9 +15,9 @@ const ROUTINE_TIPS = [
 ];
 
 const RISK_META = {
-    MALIGNANT:      { label: 'High Risk',    icon: '⚠️', cls: 'risk-high' },
-    'Pre-malignant':{ label: 'Moderate Risk', icon: '⚠️', cls: 'risk-moderate' },
-    Benign:         { label: 'Low Risk',      icon: '✅', cls: 'risk-low' },
+    MALIGNANT:      { label: 'High Risk',     Icon: ShieldAlert, cls: 'risk-high' },
+    'Pre-malignant':{ label: 'Moderate Risk', Icon: ShieldAlert, cls: 'risk-moderate' },
+    Benign:         { label: 'Low Risk',      Icon: ShieldCheck, cls: 'risk-low' },
 };
 
 export default function ResultsPanel({ result, onReset }) {
@@ -34,7 +36,7 @@ export default function ResultsPanel({ result, onReset }) {
         return (
             <div className="result-card">
                 <div className="risk-banner risk-low">
-                    <span className="risk-banner-icon">✅</span>
+                    <span className="risk-banner-icon"><ShieldCheck size={26} /></span>
                     <div>
                         <div className="risk-banner-label">We did not detect signs of a skin lesion in this image</div>
                         <div className="risk-banner-sub">The image may show clear skin, a scratch, or may be unclear</div>
@@ -65,7 +67,7 @@ export default function ResultsPanel({ result, onReset }) {
 
             {/* ── Risk Banner ── */}
             <div className={`risk-banner ${meta.cls}`}>
-                <span className="risk-banner-icon">{meta.icon}</span>
+                <span className="risk-banner-icon"><meta.Icon size={26} /></span>
                 <div>
                     <div className="risk-banner-label">{meta.label}</div>
                     <div className="risk-banner-sub">
@@ -122,6 +124,9 @@ export default function ResultsPanel({ result, onReset }) {
                     </div>
                 </div>
             </div>
+
+            {/* ── DermBot ── */}
+            <DermBotChat result={result} />
 
             {/* ── Actions ── */}
             <button className="btn-scan-again" onClick={onReset}>

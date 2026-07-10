@@ -16,7 +16,13 @@ export default function Header({ onScan }) {
         <header className="app-header">
             <div className="app-header-inner">
                 <span className="logo" onClick={() => navigate('/inbox')} role="button" tabIndex={0}>
-                    <span className="logo-icon">🔬</span>
+                    <span className="logo-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 21s-7-4.35-7-10a7 7 0 0 1 14 0c0 5.65-7 10-7 10z" />
+                            <path d="M8.5 11.5h2l1-2 1.6 3.4 1-1.4h1.4" />
+                        </svg>
+                    </span>
                     <span className="logo-text">
                         Skin<span className="logo-accent">Triage</span>
                         <span className="logo-ai">AI</span>

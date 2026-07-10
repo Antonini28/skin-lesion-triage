@@ -76,11 +76,11 @@ class InferenceService:
 
         # 2 + 3. Forward + temperature scaling
         with torch.no_grad():
-            logits = self.model(img_tensor)  # [1, 7]
+            logits = self.model(img_tensor)  # [1, NUM_CLASSES]
             scaled_logits = logits / self.temperature
-            probs = F.softmax(scaled_logits, dim=-1)  # [1, 7]
+            probs = F.softmax(scaled_logits, dim=-1)  # [1, NUM_CLASSES]
 
-        probs_np: np.ndarray = probs.cpu().numpy()[0]  # (7,)
+        probs_np: np.ndarray = probs.cpu().numpy()[0]  # (NUM_CLASSES,)
         predicted_idx: int = int(probs_np.argmax())
         predicted_class: str = IDX_TO_CLASS[predicted_idx]
 

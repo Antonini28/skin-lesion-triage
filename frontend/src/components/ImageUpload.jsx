@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { ScanFrame, Camera } from './Icons';
 
 export default function ImageUpload({ onUpload, loading }) {
     const [preview,    setPreview]    = useState(null);
@@ -84,7 +85,7 @@ export default function ImageUpload({ onUpload, loading }) {
                     <video ref={videoRef} className="webcam-video" autoPlay playsInline muted />
                     <div className="webcam-controls">
                         <button className="btn-capture" onClick={capturePhoto} disabled={capturing}>
-                            {capturing ? 'Capturing…' : '📸 Capture'}
+                            {capturing ? 'Capturing…' : <><Camera size={17} /> Capture</>}
                         </button>
                         <button className="btn-cam-cancel" onClick={stopCamera}>
                             Cancel
@@ -119,7 +120,7 @@ export default function ImageUpload({ onUpload, loading }) {
                     </div>
                 ) : (
                     <div className="dropzone-empty">
-                        <div className="dropzone-icon">📸</div>
+                        <div className="dropzone-icon"><ScanFrame size={40} /></div>
                         <p className="dropzone-title">
                             {isDragActive ? 'Drop the image here' : 'Drag & drop a skin lesion image'}
                         </p>
@@ -131,7 +132,7 @@ export default function ImageUpload({ onUpload, loading }) {
             {!loading && (
                 <div className="cam-row">
                     <button className="btn-use-camera" onClick={openCamera} type="button">
-                        📷 Use Camera
+                        <Camera size={17} /> Use Camera
                     </button>
                     {camError && <p className="cam-error">{camError}</p>}
                 </div>

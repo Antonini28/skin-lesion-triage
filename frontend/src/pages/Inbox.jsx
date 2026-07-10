@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getScanHistory, toggleFollowup } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { ClipboardList } from '../components/Icons';
 
 const RISK_META = {
     MALIGNANT:       { label: 'High Risk',     cls: 'risk-high',     color: '#e03e3e' },
@@ -130,7 +131,7 @@ export default function Inbox() {
         return (
             <div className="inbox-page">
                 <div className="inbox-auth-prompt">
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+                    <div className="inbox-empty-icon"><ClipboardList size={30} /></div>
                     <h3>Your scan history lives here</h3>
                     <p>Log in to see a record of all your past scans and follow-up actions.</p>
                     <button className="btn-primary" style={{ marginTop: '1.5rem', width: 220 }} onClick={() => navigate('/login')}>

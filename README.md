@@ -1,6 +1,10 @@
 # SkinTriage AI — Skin Lesion Classification & Triage
 
-An AI-powered web application that classifies dermoscopic skin lesion images into 7 clinical categories and provides a malignancy triage recommendation.
+An AI-powered web application that classifies dermoscopic skin lesion images into
+7 clinical lesion categories (plus a no-lesion class) and provides a malignancy
+triage recommendation. It also includes **DermBot**, a grounded clinical chat
+assistant that explains results using Retrieval-Augmented Generation over an
+8,719-document knowledge base.
 
 > **For educational / research use only. NOT a certified medical device.**
 
@@ -13,6 +17,13 @@ An AI-powered web application that classifies dermoscopic skin lesion images int
 | Frontend | React + Vite | Vercel (free tier) |
 | Backend | FastAPI + Uvicorn | Render (free tier) |
 | ML Model | EfficientNet-B0 INT8 + RL threshold policy | Hugging Face Hub (free) |
+| DermBot | Gemini 2.0 Flash + Gemini-embedding RAG (numpy cosine) | Google AI Studio (free tier) |
+
+DermBot runs **without any local ML model** — document retrieval uses pre-computed
+Gemini embeddings scored with a single numpy dot product, so the whole backend
+fits inside Render's free 512 MB tier. If the Gemini key or RAG artifacts are
+absent, DermBot degrades gracefully (LLM-only, then static clinical responses)
+and image prediction is never affected.
 
 ---
 
@@ -23,10 +34,9 @@ Image → Resize 224×224 → EfficientNet-B0 (INT8) → Temperature Scaling (T=
      → Softmax → Malignancy Score (mel+bcc+akiec) → RL Adaptive Threshold → Triage
 ```
 
-**Model performance** (HAM10000 + ISIC 2019 + PH2 test sets):
-- AUC: **0.909**
-- Sensitivity: **97.3%** (at cost-sensitive threshold τ=0.131)
-- Specificity: **54.7%**
+**Model performance** (8-class model — HAM10000 + ISIC 2019 + PH2 test sets):
+- AUC: **0.944**
+- Cost-sensitive deployment threshold τ = **0.156**, temperature T = **1.293**
 
 ### Lesion Classes
 
@@ -63,6 +73,30 @@ huggingface-cli upload YOUR_USERNAME/skin-lesion-triage-models \
     threshold_config.json
 ```
 
+### Step 1b — Build the DermBot RAG index (optional but recommended)
+
+DermBot's grounded answers need two artifacts on the HF Hub repo:
+`dermbot_docs.pkl` (the 8,719-doc knowledge base) and `dermbot_embeddings.npy`
+(Gemini embeddings of those docs). Build and upload both with one command:
+
+```bash
+cd backend
+pip install google-genai huggingface-hub numpy
+
+# free Gemini key: https://aistudio.google.com/app/apikey
+# HF write token: https://huggingface.co/settings/tokens
+export GEMINI_API_KEY="your-gemini-key"
+export HF_TOKEN="your-hf-write-token"
+
+python scripts/build_rag_embeddings.py \
+    --docs ../checkpoints/dermbot_docs.pkl \
+    --repo YOUR_USERNAME/skin-lesion-triage-models \
+    --upload
+```
+
+Skip this and DermBot still runs — it just answers from the LLM's own knowledge
+instead of retrieved clinical passages.
+
 ### Step 2 — Deploy backend to Render
 
 1. Push `skin_lesion_triage/backend/` to a GitHub repository
@@ -72,7 +106,11 @@ huggingface-cli upload YOUR_USERNAME/skin-lesion-triage-models \
    - `HF_REPO_ID` → `your-username/skin-lesion-triage-models`
    - `FRONTEND_URL` → *(set after Vercel deployment)*
    - `MODEL_CACHE_DIR` → `/tmp/models`
+   - `GEMINI_API_KEY` → *(free key from [Google AI Studio](https://aistudio.google.com/app/apikey) — enables DermBot chat)*
 5. Deploy — Render builds the Docker image automatically
+
+> **DermBot works without a Gemini key** (static clinical responses), but a free
+> key unlocks conversational, RAG-grounded answers.
 
 ### Step 3 — Deploy frontend to Vercel
 
