@@ -7,8 +7,8 @@
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
 python-multipart==0.0.12
-pydantic==2.10.0
-pydantic[email]==2.10.0
+pydantic>=2.12.5,<3
+pydantic[email]>=2.12.5,<3
 Pillow==11.0.0
 huggingface-hub==0.26.0
 timm==1.0.11
@@ -22,7 +22,8 @@ email-validator==2.2.0
 # ── DermBot — RAG + LLM ──
 # Retrieval uses Gemini embeddings + numpy cosine search (no local ML model),
 # so it fits Render's free 512 MB tier. See app/services/rag_service.py.
-google-genai==0.8.3
+# Needs a modern SDK for gemini-embedding-001 + output_dimensionality/task_type.
+google-genai==2.11.0
 
 # ── PyTorch CPU-only wheels ──
 # Install with: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
