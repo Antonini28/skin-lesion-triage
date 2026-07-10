@@ -13,7 +13,8 @@ from pathlib import Path
 # runtime, so DermBot fits comfortably inside Render's 512 MB free tier.
 GEMINI_API_KEY:     str = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL:       str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-GEMINI_EMBED_MODEL: str = os.getenv("GEMINI_EMBED_MODEL", "text-embedding-004")
+GEMINI_EMBED_MODEL: str = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
+GEMINI_EMBED_DIM:   int = int(os.getenv("GEMINI_EMBED_DIM", "768"))
 
 # ──────────────────────────────────────────────
 #  RAG artifacts (stored in HF Hub repo, optional)

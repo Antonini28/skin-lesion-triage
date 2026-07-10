@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import (
     DOCS_STORE_FILE,
     FRONTEND_URL,
+    GEMINI_EMBED_DIM,
     GEMINI_EMBED_MODEL,
     RAG_EMBEDDINGS_FILE,
     RAG_TOP_K,
@@ -94,6 +95,7 @@ async def lifespan(app: FastAPI):
                     docs_path=rag_paths[DOCS_STORE_FILE],
                     gemini_client=gemini_client,
                     embed_model=GEMINI_EMBED_MODEL,
+                    embed_dim=GEMINI_EMBED_DIM,
                     top_k=RAG_TOP_K,
                 )
             except Exception as exc:

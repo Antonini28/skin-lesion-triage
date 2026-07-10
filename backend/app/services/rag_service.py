@@ -33,12 +33,14 @@ class RAGService:
         embeddings_path: str,
         docs_path: str,
         gemini_client=None,
-        embed_model: str = "text-embedding-004",
+        embed_model: str = "gemini-embedding-001",
+        embed_dim: int = 768,
         top_k: int = 5,
     ) -> None:
         self.top_k = top_k
         self._gemini = gemini_client
         self._embed_model = embed_model
+        self._embed_dim = embed_dim
         self._matrix: Optional[np.ndarray] = None
         self._docs: list[dict] = []
 
@@ -106,9 +108,14 @@ class RAGService:
     def _embed_query(self, query: str) -> Optional[np.ndarray]:
         """Embed a single query via the Gemini API → unit-norm float32 vector."""
         try:
+            from google.genai import types
             resp = self._gemini.models.embed_content(
                 model=self._embed_model,
                 contents=query,
+                config=types.EmbedContentConfig(
+                    output_dimensionality=self._embed_dim,
+                    task_type="RETRIEVAL_QUERY",
+                ),
             )
             # google-genai returns .embeddings (list) on recent versions and
             # .embedding (single) on older ones — support both.

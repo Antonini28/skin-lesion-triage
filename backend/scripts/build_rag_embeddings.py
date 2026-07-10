@@ -38,7 +38,8 @@ from pathlib import Path
 
 import numpy as np
 
-EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "text-embedding-004")
+EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
+EMBED_DIM = int(os.getenv("GEMINI_EMBED_DIM", "768"))
 BATCH = 100  # Gemini embed_content accepts a list of contents per call
 
 
@@ -55,11 +56,15 @@ def doc_text(doc: dict) -> str:
 
 def embed_all(docs: list[dict]) -> np.ndarray:
     import google.genai as genai
+    from google.genai import types
 
     key = os.getenv("GEMINI_API_KEY")
     if not key:
         raise SystemExit("GEMINI_API_KEY is not set. See the header of this file.")
     client = genai.Client(api_key=key)
+    cfg = types.EmbedContentConfig(
+        output_dimensionality=EMBED_DIM, task_type="RETRIEVAL_DOCUMENT"
+    )
 
     texts = [doc_text(d) or " " for d in docs]
     vectors: list[list[float]] = []
@@ -69,15 +74,17 @@ def embed_all(docs: list[dict]) -> np.ndarray:
         batch = texts[start : start + BATCH]
         # Truncate very long passages to keep well under the token limit.
         batch = [t[:8000] for t in batch]
-        for attempt in range(5):
+        for attempt in range(6):
             try:
-                resp = client.models.embed_content(model=EMBED_MODEL, contents=batch)
+                resp = client.models.embed_content(
+                    model=EMBED_MODEL, contents=batch, config=cfg
+                )
                 embs = resp.embeddings if getattr(resp, "embeddings", None) else [resp.embedding]
                 vectors.extend(e.values for e in embs)
                 break
             except Exception as exc:  # transient rate limits → back off and retry
                 wait = 2 ** attempt
-                print(f"  batch {start}: {exc} — retrying in {wait}s")
+                print(f"  batch {start}: {str(exc)[:100]} — retrying in {wait}s")
                 time.sleep(wait)
         else:
             raise SystemExit(f"Failed to embed batch starting at {start}")
