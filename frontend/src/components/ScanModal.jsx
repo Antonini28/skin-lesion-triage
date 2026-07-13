@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
 import { checkHealth, predictImage, saveScan } from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import ImageUpload from './ImageUpload';
 import ResultsPanel from './ResultsPanel';
 import { AlertTriangle, Lightbulb } from './Icons';
-
-export const BODY_LOCATIONS = [
-    'Face', 'Scalp', 'Neck', 'Chest', 'Abdomen', 'Upper back', 'Lower back',
-    'Left arm', 'Right arm', 'Left hand', 'Right hand',
-    'Left leg', 'Right leg', 'Left foot', 'Right foot', 'Other',
-];
+import { BODY_LOCATIONS } from '../constants/bodyLocations';
 
 // Downscale an uploaded image to a small JPEG data-URL for mole-tracking thumbnails.
 function makeThumb(file) {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authLogin, authRegister } from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { HealthMark } from '../components/Icons';
 
 const CURRENT_YEAR = new Date().getFullYear();

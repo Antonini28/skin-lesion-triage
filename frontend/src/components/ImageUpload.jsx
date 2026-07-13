@@ -40,7 +40,7 @@ export default function ImageUpload({ onUpload, loading }) {
                     videoRef.current.play();
                 }
             }, 100);
-        } catch (err) {
+        } catch {
             setCamError('Camera access denied or not available. Please allow camera permission.');
         }
     };

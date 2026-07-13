@@ -46,11 +46,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Advisory for now: the strict react-hooks rules flag ~10 pre-existing
-      # issues. Make this blocking once they are fixed.
-      - name: Lint (advisory)
+      - name: Lint
         run: npx eslint .
-        continue-on-error: true
 
       - name: Build
         run: npm run build

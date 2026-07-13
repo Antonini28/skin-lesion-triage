@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getScanHistory } from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { ClipboardList } from '../components/Icons';
 
 function fmtDate(dateStr) {
@@ -79,18 +79,21 @@ export default function Tracking() {
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
-    const [scans, setScans]     = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError]     = useState('');
+    // scans === null means "not fetched yet", so loading is derived
+    // instead of being set synchronously inside the effect.
+    const [scans, setScans] = useState(null);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (!user) return;
-        setLoading(true);
+        let cancelled = false;
         getScanHistory()
-            .then(setScans)
-            .catch(() => setError('Failed to load your tracked moles.'))
-            .finally(() => setLoading(false));
+            .then((data) => { if (!cancelled) setScans(data); })
+            .catch(() => { if (!cancelled) setError('Failed to load your tracked moles.'); });
+        return () => { cancelled = true; };
     }, [user]);
+
+    const loading = Boolean(user) && scans === null && !error;
 
     if (!authLoading && !user) {
         return (
@@ -107,7 +110,7 @@ export default function Tracking() {
         );
     }
 
-    const groups = groupByLocation(scans);
+    const groups = groupByLocation(scans ?? []);
     const locations = Object.keys(groups).sort();
 
     return (

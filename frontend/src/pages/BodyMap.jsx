@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function BodySilhouette({ side }) {
     return (
@@ -43,14 +43,8 @@ function BodySilhouette({ side }) {
 
 export default function BodyMap({ onScan }) {
     const [side, setSide]               = useState('front');
-    const [showOnboarding, setOnboard]  = useState(false);
+    const [showOnboarding, setOnboard]  = useState(() => !localStorage.getItem('skintriage_onboarded'));
     const [reminderSet, setReminderSet] = useState(false);
-
-    useEffect(() => {
-        if (!localStorage.getItem('skintriage_onboarded')) {
-            setOnboard(true);
-        }
-    }, []);
 
     const dismissOnboarding = () => {
         localStorage.setItem('skintriage_onboarded', '1');

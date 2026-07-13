@@ -66,7 +66,7 @@ export default function DermBotChat({ result = null, floating = false }) {
                 : `Hi, I'm DermBot - how can I assist you?`;
             setMessages([{ role: 'bot', text: greeting, sources: 0, escalated: false }]);
         }
-    }, [open]);
+    }, [open, messages.length, result]);
 
     // Scroll to bottom on new message
     useEffect(() => {
