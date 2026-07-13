@@ -41,6 +41,17 @@ function EscalationBadge() {
     return <span className="dbc-escalation-badge">Urgent</span>;
 }
 
+function BotGlyph() {
+    return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <line x1="12" y1="8" x2="12" y2="13" />
+            <line x1="9.5" y1="10.5" x2="14.5" y2="10.5" />
+        </svg>
+    );
+}
+
 function riskClass(risk) {
     if (risk === 'MALIGNANT') return 'malignant';
     if (risk === 'Pre-malignant') return 'premalignant';
@@ -58,15 +69,17 @@ export default function DermBotChat({ result = null, floating = false }) {
 
     const quickQuestions = result ? QUICK_QUESTIONS : GENERAL_QUESTIONS;
 
-    // Greet when panel first opens
-    useEffect(() => {
-        if (open && messages.length === 0) {
+    // Greet when the panel first opens — done in the open handler rather
+    // than an effect so no state is set synchronously inside an effect.
+    const openPanel = () => {
+        setOpen(true);
+        if (messages.length === 0) {
             const greeting = result
                 ? `Hi, I'm DermBot. I can explain your **${result.predicted_class_full_name}** result and answer your questions, grounded in clinical dermatology literature — ask me anything.`
                 : `Hi, I'm DermBot - how can I assist you?`;
             setMessages([{ role: 'bot', text: greeting, sources: 0, escalated: false }]);
         }
-    }, [open, messages.length, result]);
+    };
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -185,26 +198,17 @@ export default function DermBotChat({ result = null, floating = false }) {
             i % 2 === 1 ? <strong key={i}>{part}</strong> : part
         );
 
-    const BotGlyph = () => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            <line x1="12" y1="8" x2="12" y2="13" />
-            <line x1="9.5" y1="10.5" x2="14.5" y2="10.5" />
-        </svg>
-    );
-
     if (!open) {
         if (floating) {
             return (
-                <button className="dbc-fab" onClick={() => setOpen(true)} aria-label="Ask DermBot">
+                <button className="dbc-fab" onClick={openPanel} aria-label="Ask DermBot">
                     <BotGlyph />
                     <span className="dbc-fab-label">Ask DermBot</span>
                 </button>
             );
         }
         return (
-            <button className="dbc-toggle" onClick={() => setOpen(true)}>
+            <button className="dbc-toggle" onClick={openPanel}>
                 <BotGlyph />
                 <span>Ask DermBot</span>
                 <span className="dbc-toggle-badge">RAG · AI</span>

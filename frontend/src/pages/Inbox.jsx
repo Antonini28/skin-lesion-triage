@@ -98,30 +98,27 @@ export default function Inbox() {
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
-    const [tab, setTab]       = useState('messages');
-    const [scans, setScans]   = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError]   = useState('');
-
-    const load = async () => {
-        setLoading(true); setError('');
-        try {
-            const data = await getScanHistory();
-            setScans(data);
-        } catch {
-            setError('Failed to load scan history.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [tab, setTab] = useState('messages');
+    // fetchedScans === null means "not fetched yet", so loading is derived
+    // instead of being set synchronously inside the effect.
+    const [fetchedScans, setScans] = useState(null);
+    const [error, setError]        = useState('');
 
     useEffect(() => {
-        if (user) load();
+        if (!user) return;
+        let cancelled = false;
+        getScanHistory()
+            .then((data) => { if (!cancelled) setScans(data); })
+            .catch(() => { if (!cancelled) setError('Failed to load scan history.'); });
+        return () => { cancelled = true; };
     }, [user]);
+
+    const loading = Boolean(user) && fetchedScans === null && !error;
+    const scans   = fetchedScans ?? [];
 
     const handleToggle = async (scanId) => {
         const data = await toggleFollowup(scanId);
-        setScans((prev) => prev.map((s) => (s.id === scanId ? data : s)));
+        setScans((prev) => (prev ?? []).map((s) => (s.id === scanId ? data : s)));
     };
 
     const referScans = scans.filter((s) => s.triage_recommendation?.startsWith('REFER'));
